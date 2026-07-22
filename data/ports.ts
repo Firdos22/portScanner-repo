@@ -1,0 +1,198 @@
+export type PortStatus = 'open' | 'closed' | 'filtered';
+export type Protocol = 'TCP' | 'UDP';
+
+export type PortInfo = {
+  port: number;
+  service: string;
+  protocol: Protocol;
+  status: PortStatus;
+  description: string;
+  purpose: string;
+  commonUses: string[];
+  securityRisks: string[];
+  attackExamples: string[];
+  bestPractices: string[];
+  recommendations: string;
+  educationalNotes: string;
+  icon: string;
+};
+
+export const PORTS: PortInfo[] = [
+  {
+    port: 21, service: 'FTP', protocol: 'TCP', status: 'open',
+    description: 'File Transfer Protocol — transfers files between client and server.',
+    purpose: 'Uploading and downloading files to/from a remote server.',
+    commonUses: ['Website file uploads', 'Shared file repositories', 'Backup transfers'],
+    securityRisks: ['Sends credentials in plaintext', 'Susceptible to brute-force attacks', 'No built-in encryption'],
+    attackExamples: ['FTP bounce attacks', 'Credential sniffing', 'Anonymous FTP abuse'],
+    bestPractices: ['Replace with SFTP/FTPS', 'Disable anonymous login', 'Restrict by IP allowlist'],
+    recommendations: 'Migrate to SFTP (port 22) or FTPS. Disable anonymous access and enforce strong passwords.',
+    educationalNotes: 'FTP was designed in 1985 when network security was not a priority. Modern deployments should avoid plaintext FTP.',
+    icon: 'file-text',
+  },
+  {
+    port: 22, service: 'SSH', protocol: 'TCP', status: 'open',
+    description: 'Secure Shell — encrypted remote command-line access and tunneling.',
+    purpose: 'Secure administration of remote systems over an encrypted channel.',
+    commonUses: ['Remote server management', 'Secure file transfers (SFTP)', 'Port forwarding and tunnels'],
+    securityRisks: ['Brute-force login attempts', 'Weak SSH keys', 'Misconfigured root login'],
+    attackExamples: ['Credential stuffing', 'SSH key theft', 'Root login exploitation'],
+    bestPractices: ['Use key-based authentication', 'Disable root login', 'Change default port', 'Use fail2ban'],
+    recommendations: 'Disable password auth in favor of ed25519 keys. Limit which users can SSH in.',
+    educationalNotes: 'SSH replaced telnet/rsh by adding strong encryption and integrity. It is the modern standard for remote access.',
+    icon: 'lock',
+  },
+  {
+    port: 23, service: 'Telnet', protocol: 'TCP', status: 'closed',
+    description: 'Telnet — legacy unencrypted remote terminal protocol.',
+    purpose: 'Remote command-line access (pre-SSH era).',
+    commonUses: ['Legacy industrial equipment', 'Old network devices', 'Educational labs'],
+    securityRisks: ['No encryption whatsoever', 'Credentials visible on the wire', 'Trivial to intercept'],
+    attackExamples: ['Packet sniffing', 'Man-in-the-middle attacks', 'Credential replay'],
+    bestPractices: ['Disable Telnet entirely', 'Replace with SSH', 'Block port 23 at the firewall'],
+    recommendations: 'Never expose Telnet on a production network. Replace with SSH everywhere.',
+    educationalNotes: 'Telnet is a textbook example of why plaintext protocols are dangerous — even on internal networks.',
+    icon: 'terminal',
+  },
+  {
+    port: 25, service: 'SMTP', protocol: 'TCP', status: 'open',
+    description: 'Simple Mail Transfer Protocol — sends email between mail servers.',
+    purpose: 'Routing and delivery of outbound email.',
+    commonUses: ['Mail server-to-server delivery', 'Outbound email clients (with STARTTLS)'],
+    securityRisks: ['Open relay abuse', 'Email spoofing', 'Spam propagation'],
+    attackExamples: ['Open relay spam', 'Email spoofing', 'SMTP smuggling'],
+    bestPractices: ['Require authentication for relay', 'Enable STARTTLS', 'Configure SPF, DKIM, DMARC'],
+    recommendations: 'Lock down relaying to authenticated users only. Publish SPF/DKIM/DMARC records.',
+    educationalNotes: 'SMTP was not designed with strong auth — modern email security layers SPF, DKIM, and DMARC on top.',
+    icon: 'mail',
+  },
+  {
+    port: 53, service: 'DNS', protocol: 'UDP', status: 'open',
+    description: 'Domain Name System — translates domain names to IP addresses.',
+    purpose: 'Name resolution for the entire internet.',
+    commonUses: ['Website lookups', 'Service discovery', 'Load balancing'],
+    securityRisks: ['DNS amplification DDoS', 'Cache poisoning', 'DNS tunneling'],
+    attackExamples: ['DNS spoofing', 'Cache poisoning', 'NXDOMAIN floods'],
+    bestPractices: ['Enable DNSSEC', 'Restrict recursive queries', 'Monitor for tunneling'],
+    recommendations: 'Enable DNSSEC, restrict recursion to trusted clients, and monitor unusual query patterns.',
+    educationalNotes: 'DNS is often called the phonebook of the internet — and it runs primarily over UDP.',
+    icon: 'globe',
+  },
+  {
+    port: 80, service: 'HTTP', protocol: 'TCP', status: 'open',
+    description: 'HyperText Transfer Protocol — unencrypted web traffic.',
+    purpose: 'Serving and retrieving web pages.',
+    commonUses: ['Website access (legacy)', 'APIs', 'Redirect to HTTPS'],
+    securityRisks: ['No encryption', 'Susceptible to eavesdropping', 'Content injection'],
+    attackExamples: ['Packet sniffing', 'Session hijacking', 'Content injection'],
+    bestPractices: ['Redirect all traffic to HTTPS', 'Use HSTS headers', 'Never transmit sensitive data over HTTP'],
+    recommendations: 'Redirect port 80 to 443. Enable HSTS so browsers never use plain HTTP for your domain.',
+    educationalNotes: 'Port 80 is the original web port. Modern sites should use it only to redirect to HTTPS.',
+    icon: 'wifi',
+  },
+  {
+    port: 110, service: 'POP3', protocol: 'TCP', status: 'closed',
+    description: 'Post Office Protocol v3 — downloads email from a mail server.',
+    purpose: 'Retrieving email to a local client (then deleting from server).',
+    commonUses: ['Legacy email clients', 'Low-bandwidth email retrieval'],
+    securityRisks: ['Plaintext credentials by default', 'No server-side folder sync'],
+    attackExamples: ['Credential sniffing', 'Man-in-the-middle attacks'],
+    bestPractices: ['Use POP3S (port 995)', 'Prefer IMAP for multi-device access', 'Enable encryption'],
+    recommendations: 'Migrate to IMAPS (port 993) for multi-device email. If POP3 is required, use POP3S.',
+    educationalNotes: 'POP3 downloads and deletes — unlike IMAP which syncs. Most modern users should use IMAP.',
+    icon: 'inbox',
+  },
+  {
+    port: 143, service: 'IMAP', protocol: 'TCP', status: 'open',
+    description: 'Internet Message Access Protocol — syncs email across devices.',
+    purpose: 'Accessing and managing email directly on the server.',
+    commonUses: ['Multi-device email clients', 'Server-side folder management'],
+    securityRisks: ['Plaintext by default', 'Session hijacking'],
+    attackExamples: ['Credential sniffing', 'Session hijacking'],
+    bestPractices: ['Use IMAPS (port 993) with SSL/TLS', 'Require strong passwords'],
+    recommendations: 'Always use IMAPS on port 993 instead of plaintext IMAP on 143.',
+    educationalNotes: 'IMAP keeps mail on the server and syncs folders — ideal for modern multi-device usage.',
+    icon: 'inbox',
+  },
+  {
+    port: 443, service: 'HTTPS', protocol: 'TCP', status: 'open',
+    description: 'HTTP Secure — encrypted web traffic over TLS/SSL.',
+    purpose: 'Secure web browsing and API communication.',
+    commonUses: ['Secure websites', 'Secure REST/GraphQL APIs', 'WebSockets over TLS'],
+    securityRisks: ['Weak cipher suites', 'Expired certificates', 'TLS downgrade attacks'],
+    attackExamples: ['TLS stripping', 'Heartbleed-style bugs', 'Certificate spoofing'],
+    bestPractices: ['Use TLS 1.2+ only', 'Enable HSTS', 'Use strong cipher suites', 'Auto-renew certificates'],
+    recommendations: 'Enforce TLS 1.3 where possible. Enable HSTS and OCSP stapling.',
+    educationalNotes: 'HTTPS = HTTP + TLS. It protects confidentiality and integrity of web traffic.',
+    icon: 'shield-check',
+  },
+  {
+    port: 3306, service: 'MySQL', protocol: 'TCP', status: 'closed',
+    description: 'MySQL — popular open-source relational database.',
+    purpose: 'Client connections to a MySQL database server.',
+    commonUses: ['Web application databases', 'Analytics databases', 'CMS backends'],
+    securityRisks: ['Exposed database to internet', 'Weak root passwords', 'SQL injection (app layer)'],
+    attackExamples: ['Credential brute-force', 'SQL injection', 'Privilege escalation'],
+    bestPractices: ['Never expose 3306 to the public internet', 'Use strong root passwords', 'Require TLS'],
+    recommendations: 'Bind MySQL to localhost or a private network. Never expose port 3306 publicly.',
+    educationalNotes: 'Databases should never be reachable from the open internet — always behind a firewall or VPN.',
+    icon: 'database',
+  },
+  {
+    port: 3389, service: 'RDP', protocol: 'TCP', status: 'closed',
+    description: 'Remote Desktop Protocol — graphical remote access to Windows.',
+    purpose: 'Remote graphical login to a Windows machine.',
+    commonUses: ['Remote Windows administration', 'Virtual desktops', 'Helpdesk access'],
+    securityRisks: ['Brute-force attacks', 'Vulnerability exploits (BlueKeep)', 'Credential theft'],
+    attackExamples: ['BlueKeep (CVE-2019-0708)', 'Brute-force login', 'Session hijacking'],
+    bestPractices: ['Never expose RDP to the internet', 'Require NLA', 'Use a VPN or gateway', 'Enable MFA'],
+    recommendations: 'Place RDP behind a VPN or Remote Desktop Gateway. Enable Network Level Authentication.',
+    educationalNotes: 'Exposed RDP is one of the most common vectors for ransomware — never leave it internet-facing.',
+    icon: 'monitor',
+  },
+];
+
+export const LEARN_TOPICS = [
+  { id: 'what-is-port', title: 'What is a Port?', icon: 'plug', summary: 'A logical endpoint for network communication on a device.', body: 'A port is a 16-bit number (0–65535) that identifies a specific process or service on a host. When data arrives at an IP address, the port number tells the operating system which application should receive it. Think of an IP address as a building and a port as a room inside that building.' },
+  { id: 'tcp-vs-udp', title: 'TCP vs UDP', icon: 'split', summary: 'Two transport protocols with very different trade-offs.', body: 'TCP (Transmission Control Protocol) is connection-oriented, reliable, and ordered — it establishes a handshake, retransmits lost packets, and guarantees delivery. UDP (User Datagram Protocol) is connectionless and fire-and-forget — faster but with no delivery guarantees. TCP is used for web, email, and SSH; UDP for DNS, streaming, and gaming.' },
+  { id: 'open-port', title: 'Open Port', icon: 'lock-open', summary: 'A port actively accepting connections.', body: 'An open port has a service listening on it and accepting incoming connections. Open ports are not inherently bad — they are how servers provide services — but each open port is also a potential attack surface that should be justified, monitored, and secured.' },
+  { id: 'closed-port', title: 'Closed Port', icon: 'lock', summary: 'A port with no service listening.', body: 'A closed port has no application listening, so a connection attempt is actively refused (the host responds with a RST packet). Closed ports are safer than open ones, but they still confirm the host is reachable. Some scanners distinguish "closed" from "filtered".' },
+  { id: 'filtered-port', title: 'Filtered Port', icon: 'shield', summary: 'A port hidden behind a firewall.', body: 'A filtered port is one where a firewall or ACL blocks probe packets so the scanner cannot tell whether a service is listening. Filtering adds ambiguity for attackers but is not a substitute for securing the underlying service.' },
+  { id: 'port-scanning', title: 'Port Scanning', icon: 'radar', summary: 'Probing a host for open ports and services.', body: 'Port scanning sends packets to a range of ports and analyzes responses to discover which services are running. Defenders use it to audit their own attack surface; attackers use it to find entry points. Common scan types include TCP SYN (half-open), TCP connect, UDP, and FIN/Xmas scans.' },
+  { id: 'why-attackers-scan', title: 'Why Attackers Scan Ports', icon: 'swords', summary: 'Reconnaissance is the first step of an attack.', body: 'Attackers scan to map a target — identify live hosts, open ports, service versions, and operating systems. This reconnaissance lets them match known vulnerabilities to discovered services. Early detection of unauthorized scanning is a key defensive signal.' },
+  { id: 'how-defenders-use', title: 'How Defenders Use Port Scanning', icon: 'shield-check', summary: 'Audit your own attack surface before attackers do.', body: 'Defenders run regular scans against their own infrastructure to find unexpected open ports, misconfigurations, and forgotten services. This is a core practice of attack-surface management and compliance audits. Scanning your own network is legal and encouraged.' },
+  { id: 'tools-nmap', title: 'Nmap', icon: 'terminal', summary: 'The industry-standard network mapper.', body: 'Nmap ("Network Mapper") is a free, open-source tool for network discovery and security auditing. It supports a wide range of scan types, OS fingerprinting, service version detection, and a scripting engine (NSE) for custom probes. It is the most widely-used port scanner in the world.' },
+  { id: 'tools-masscan', title: 'Masscan', icon: 'zap', summary: 'Extremely fast internet-scale port scanner.', body: 'Masscan can scan the entire internet in under six minutes by using a custom TCP/IP stack and asynchronous transmission. It trades some accuracy for raw speed and is used for large-scale research and reconnaissance.' },
+  { id: 'tools-zenmap', title: 'Zenmap', icon: 'layout-grid', summary: 'The graphical front-end for Nmap.', body: 'Zenmap is a multi-platform GUI for Nmap. It lets users run scans without memorizing flags, save and compare scan results, and visualize network topologies. Great for beginners learning Nmap concepts.' },
+  { id: 'tools-rustscan', title: 'RustScan', icon: 'gauge', summary: 'Modern, fast scanner that feeds results to Nmap.', body: 'RustScan scans all 65,535 ports in seconds using async Rust, then hands open ports to Nmap for detailed service detection. It combines speed with Nmap’s deep analysis — a popular modern workflow.' },
+] as const;
+
+export type QuizQuestion = {
+  id: string;
+  question: string;
+  options: string[];
+  correctIndex: number;
+  explanation: string;
+};
+
+export const QUIZ_QUESTIONS: QuizQuestion[] = [
+  { id: 'q1', question: 'Which port is used by HTTPS?', options: ['80', '443', '22', '21'], correctIndex: 1, explanation: 'HTTPS uses port 443 and encrypts web traffic with TLS/SSL.' },
+  { id: 'q2', question: 'Which protocol typically uses port 22?', options: ['Telnet', 'FTP', 'SSH', 'SMTP'], correctIndex: 2, explanation: 'SSH (Secure Shell) uses port 22 for encrypted remote access.' },
+  { id: 'q3', question: 'What is the main difference between TCP and UDP?', options: ['TCP is faster than UDP', 'UDP guarantees delivery, TCP does not', 'TCP is connection-oriented and reliable; UDP is connectionless and best-effort', 'They are identical'], correctIndex: 2, explanation: 'TCP establishes a connection and guarantees ordered delivery; UDP is fire-and-forget with no guarantees.' },
+  { id: 'q4', question: 'Which port does DNS primarily use?', options: ['53', '80', '25', '110'], correctIndex: 0, explanation: 'DNS primarily uses UDP port 53 for queries (TCP 53 for large responses and zone transfers).' },
+  { id: 'q5', question: 'Why is Telnet considered insecure?', options: ['It uses too much bandwidth', 'It transmits data including passwords in plaintext', 'It only works on Windows', 'It requires a VPN'], correctIndex: 1, explanation: 'Telnet sends everything in plaintext, including credentials, making it trivial to intercept.' },
+  { id: 'q6', question: 'What does a "filtered" port mean?', options: ['The port is open and serving traffic', 'A firewall blocks probes so the state cannot be determined', 'The port is reserved by the OS', 'The service is restarting'], correctIndex: 1, explanation: 'A filtered port is hidden behind a firewall — the scanner cannot tell if a service is listening.' },
+  { id: 'q7', question: 'Which tool is a GUI front-end for Nmap?', options: ['Masscan', 'RustScan', 'Zenmap', 'Wireshark'], correctIndex: 2, explanation: 'Zenmap is the official graphical front-end for Nmap.' },
+  { id: 'q8', question: 'What is the recommended replacement for FTP?', options: ['Telnet', 'SFTP or FTPS', 'HTTP', 'SMTP'], correctIndex: 1, explanation: 'SFTP (over SSH) or FTPS (FTP over TLS) add encryption that plain FTP lacks.' },
+];
+
+export type Achievement = { id: string; title: string; description: string; icon: string };
+
+export const ACHIEVEMENTS: Achievement[] = [
+  { id: 'first-scan', title: 'First Scan', description: 'Completed your first simulated scan.', icon: 'rocket' },
+  { id: 'network-explorer', title: 'Network Explorer', description: 'Scanned 5 different IP addresses.', icon: 'compass' },
+  { id: 'port-master', title: 'Port Master', description: 'Viewed details for 10 different ports.', icon: 'award' },
+  { id: 'cyber-learner', title: 'Cyber Learner', description: 'Completed a quiz.', icon: 'book-open' },
+  { id: 'security-analyst', title: 'Security Analyst', description: 'Generated a scan report.', icon: 'file-chart-column' },
+  { id: 'quiz-champion', title: 'Quiz Champion', description: 'Scored 100% on a quiz.', icon: 'crown' },
+];
