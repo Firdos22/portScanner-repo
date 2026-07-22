@@ -31,16 +31,3 @@ export function ProtocolBarChart({ data, height = 200 }: { data: { label: string
     </ResponsiveContainer>
   );
 }
-
-export function WeeklyActivityChart({ data, height = 180 }: { data: { day: string; scans: number }[]; height?: number }) {
-  return (
-    <ResponsiveContainer width="100%" height={height}>
-      <BarChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-        <XAxis dataKey="day" tick={{ fill: '#94A3B8', fontSize: 11, fontWeight: 600 }} axisLine={false} tickLine={false} />
-        <YAxis tick={{ fill: '#64748B', fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
-        <Tooltip contentStyle={{ background: '#0A0F24', border: '1px solid rgba(80,120,220,0.3)', borderRadius: 12, color: '#F1F5F9' }} cursor={{ fill: 'rgba(59,130,246,0.1)' }} />
-        <Bar dataKey="scans" fill="#06B6D4" radius={[6, 6, 0, 0]} />
-      </BarChart>
-    </ResponsiveContainer>
-  );
-}

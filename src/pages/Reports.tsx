@@ -5,7 +5,7 @@ import { ArrowLeft, FileText, FileJson, FileSpreadsheet, Share2, Download, Check
 import { useProgress } from '@/context/ProgressContext';
 import {
   getReportContent, getReportMimeType, getReportFileExtension, downloadFile,
-  calculateStatistics, type ReportFormat,
+  calculateStatistics, formatDuration, type ReportFormat,
 } from '@/utils/scanner';
 
 const FORMAT_OPTIONS: { key: ReportFormat; label: string; icon: typeof FileText; desc: string }[] = [
@@ -23,12 +23,11 @@ export default function Reports() {
   const [copied, setCopied] = useState(false);
   const stats = last ? calculateStatistics(last) : null;
   const content = last ? getReportContent(last, format) : '';
-
-  const safeIp = last ? last.ip.replace(/\./g, '-') : 'scan';
+  const safeHost = last ? last.host.replace(/[^a-zA-Z0-9]/g, '-') : 'scan';
 
   const handleDownload = () => {
     if (!last) return;
-    const filename = `scan-report-${safeIp}.${getReportFileExtension(format)}`;
+    const filename = `scan-report-${safeHost}.${getReportFileExtension(format)}`;
     downloadFile(content, filename, getReportMimeType(format));
     recordReport();
     setDownloaded(true);
@@ -38,10 +37,10 @@ export default function Reports() {
   const handleShare = async () => {
     if (!last) return;
     try {
-      if (navigator.share) {
+      if ('share' in navigator) {
         await navigator.share({ text: content, title: 'Port Scanner Dashboard Report' });
       } else {
-        await navigator.clipboard.writeText(content);
+        await window.navigator.clipboard.writeText(content);
         setCopied(true);
         setTimeout(() => setCopied(false), 2500);
       }
@@ -52,10 +51,8 @@ export default function Reports() {
   return (
     <div className="min-h-screen p-4 md:p-8 max-w-3xl mx-auto">
       <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-slate-400 text-sm font-semibold mb-6 hover:text-white transition-colors"><ArrowLeft size={20} /> Back</button>
-
       <h1 className="text-2xl font-extrabold text-white mb-1">Reports</h1>
-      <p className="text-sm text-slate-400 mb-6">{last ? `Target ${last.ip}` : 'Run a scan first to generate a report.'}</p>
-
+      <p className="text-sm text-slate-400 mb-6">{last ? `Target ${last.host} · ${formatDuration(last.durationMs)}` : 'Run a scan first to generate a report.'}</p>
       {!last ? (
         <div className="border border-dashed border-cyber-border rounded-2xl py-14 flex flex-col items-center gap-3">
           <FileText size={40} className="text-slate-600" />
@@ -67,13 +64,12 @@ export default function Reports() {
             <div className="glass-card p-5 mb-4">
               <h2 className="text-base font-bold text-white mb-4">Scan Summary</h2>
               <div className="grid grid-cols-3 gap-4">
-                {[{ label: 'Target', value: stats.ip }, { label: 'Total', value: String(stats.total) }, { label: 'Open', value: String(stats.open) }, { label: 'Closed', value: String(stats.closed) }, { label: 'TCP', value: String(stats.tcp) }, { label: 'UDP', value: String(stats.udp) }].map((s) => (
-                  <div key={s.label}><p className="text-xs font-semibold text-slate-500">{s.label}</p><p className="text-base font-extrabold text-white mt-1">{s.value}</p></div>
+                {[{ label: 'Host', value: stats.host }, { label: 'Total', value: String(stats.total) }, { label: 'Open', value: String(stats.open) }, { label: 'Closed', value: String(stats.closed) }, { label: 'Duration', value: formatDuration(stats.durationMs) }].map((s) => (
+                  <div key={s.label}><p className="text-xs font-semibold text-slate-500">{s.label}</p><p className="text-base font-extrabold text-white mt-1 truncate">{s.value}</p></div>
                 ))}
               </div>
             </div>
           )}
-
           <p className="text-xs font-extrabold tracking-widest text-slate-500 mb-3">DOWNLOAD FORMAT</p>
           <div className="grid grid-cols-3 gap-3 mb-4">
             {FORMAT_OPTIONS.map((opt) => {
@@ -87,11 +83,9 @@ export default function Reports() {
               );
             })}
           </div>
-
           <div className="glass-card p-4 mb-4 max-h-[400px] overflow-auto">
             <pre className="text-xs text-slate-400 font-mono whitespace-pre-wrap leading-relaxed">{content}</pre>
           </div>
-
           <div className="flex gap-3 mb-4">
             <button onClick={handleDownload} className="flex-1 flex items-center justify-center gap-2 gradient-primary text-white font-bold py-3.5 rounded-xl hover:opacity-90 transition-opacity">
               {downloaded ? <><CheckCircle2 size={18} /> Downloaded!</> : <><Download size={18} /> Download {format.toUpperCase()}</>}
@@ -100,10 +94,7 @@ export default function Reports() {
               {copied ? <><CheckCircle2 size={16} /> Copied!</> : 'share' in navigator ? <><Share2 size={16} /> Share</> : <><Copy size={16} /> Copy</>}
             </button>
           </div>
-
-          <p className="text-xs text-slate-600 leading-relaxed">
-            Reports include IP, open/closed ports, statistics, learning notes, and recommendations. Download in your preferred format or share directly. Educational simulator only — no real scanning.
-          </p>
+          <p className="text-xs text-slate-600 leading-relaxed">Reports include host, open/closed ports, statistics, and recommendations. Download in your preferred format or share directly.</p>
         </>
       )}
     </div>

@@ -1,16 +1,16 @@
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Github, Shield, BookOpen, Lock, Code } from 'lucide-react';
+import { ArrowLeft, Github, Shield, BookOpen, Lock, Code, Radar } from 'lucide-react';
 import { DEVELOPER, DISCLAIMER } from '@/data/ports';
 import { AnimatedShield } from '@/components/CyberVisuals';
 
 export default function About() {
   const navigate = useNavigate();
   const features = [
-    { icon: Shield, title: 'Educational Simulator', desc: 'Simulates port scanning with predefined data — never performs real network scanning.' },
+    { icon: Radar, title: 'Real TCP Scanning', desc: 'Performs actual TCP connect scans via a serverless edge function — not simulated data.' },
     { icon: BookOpen, title: 'Learn Networking', desc: 'Explore ports, protocols, TCP vs UDP, and common security risks interactively.' },
     { icon: Lock, title: 'Security Awareness', desc: 'Understand attack surfaces and mitigation best practices for common ports.' },
-    { icon: Code, title: 'Modern Stack', desc: 'Built with React, Vite, Framer Motion, Recharts, and Supabase auth.' },
+    { icon: Code, title: 'Modern Stack', desc: 'Built with React, Vite, Framer Motion, Recharts, Supabase Edge Functions, and Deno.' },
   ];
 
   return (
@@ -19,7 +19,7 @@ export default function About() {
       <div className="flex flex-col items-center gap-3 py-8">
         <AnimatedShield size={80} />
         <h1 className="text-2xl font-extrabold text-white">Port Scanner Dashboard</h1>
-        <p className="text-sm text-slate-400 text-center">Educational Network Port Scanner Simulator</p>
+        <p className="text-sm text-slate-400 text-center">Real-Time Network Port Scanner</p>
       </div>
       <div className="flex items-start gap-2.5 bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 mb-6"><Shield size={18} className="text-amber-500 flex-shrink-0 mt-0.5" /><p className="text-xs text-slate-400 leading-relaxed">{DISCLAIMER}</p></div>
       <p className="text-xs font-extrabold tracking-widest text-slate-500 mb-3">FEATURES</p>
@@ -38,7 +38,7 @@ export default function About() {
       </div>
       <a href={DEVELOPER.github} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 border border-cyber-border rounded-xl py-3.5 text-sm font-bold text-cyber-accentGlow hover:border-cyber-glow/40 transition-colors"><Github size={18} /> {DEVELOPER.github}</a>
       <p className="text-xs text-slate-600 text-center mt-8">© {new Date().getFullYear()} {DEVELOPER.name}. All rights reserved.</p>
-      <p className="text-xs text-slate-600 text-center mt-1">Built for educational and portfolio purposes.</p>
+      <p className="text-xs text-slate-600 text-center mt-1">Built for educational and authorized security testing purposes.</p>
     </div>
   );
 }

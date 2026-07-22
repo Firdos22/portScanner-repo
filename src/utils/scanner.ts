@@ -1,99 +1,226 @@
-import { PORTS, type PortInfo } from '@/data/ports';
+import { supabase, EDGE_FUNCTION_URL } from '@/lib/supabase';
+import { getPortInfo } from '@/data/ports';
 
-export type ScanResult = { ip: string; ports: PortInfo[]; durationMs: number; timestamp: number };
+export type PortStatus = 'open' | 'closed';
 
-export type ReportFormat = 'text' | 'json' | 'csv';
-
-export type Statistics = {
-  total: number; open: number; closed: number; filtered: number;
-  tcp: number; udp: number; durationMs: number; ip: string;
+export type ScannedPort = {
+  port: number;
+  status: PortStatus;
+  service: string;
 };
 
-export function validateIPAddress(ip: string): boolean {
-  const parts = ip.trim().split('.');
-  if (parts.length !== 4) return false;
-  return parts.every((p) => { if (!/^\d+$/.test(p)) return false; const n = Number(p); return n >= 0 && n <= 255; });
+export type ScanResult = {
+  host: string;
+  ports: ScannedPort[];
+  openCount: number;
+  closedCount: number;
+  durationMs: number;
+  timestamp: number;
+};
+
+export type Statistics = {
+  total: number; open: number; closed: number; durationMs: number; host: string;
+};
+
+export type ScanProgress = {
+  port: number;
+  status: PortStatus;
+  service: string;
+  scanned: number;
+  total: number;
+};
+
+export type SSEEvent =
+  | { type: 'start'; host: string; totalPorts: number; ports: number[]; timestamp: number }
+  | { type: 'port' } & ScanProgress
+  | { type: 'complete'; host: string; totalPorts: number; openCount: number; closedCount: number; results: ScannedPort[]; timestamp: number }
+  | { type: 'error'; message: string };
+
+export type ScanCallbacks = {
+  onStart?: (host: string, totalPorts: number, ports: number[]) => void;
+  onPort?: (progress: ScanProgress) => void;
+  onComplete?: (result: ScanResult) => void;
+  onError?: (message: string) => void;
+};
+
+export function validateHost(host: string): boolean {
+  const trimmed = host.trim();
+  // IPv4
+  const parts = trimmed.split('.');
+  if (parts.length === 4 && parts.every((p) => /^\d+$/.test(p) && Number(p) >= 0 && Number(p) <= 255)) {
+    return true;
+  }
+  // Hostname
+  return /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/.test(trimmed);
 }
 
-export function simulateScan(ip: string): Promise<ScanResult> {
-  return new Promise((resolve) => {
-    const ports = PORTS.map((p) => ({ ...p }));
-    const durationMs = 2200 + Math.floor(Math.random() * 800);
-    setTimeout(() => { resolve({ ip, ports, durationMs, timestamp: Date.now() }); }, durationMs);
-  });
+export async function performRealScan(
+  host: string,
+  ports: number[] | null,
+  callbacks: ScanCallbacks,
+  signal?: AbortSignal,
+): Promise<ScanResult | null> {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const accessToken = sessionData.session?.access_token;
+
+  if (!accessToken) {
+    callbacks.onError?.('Authentication required. Please sign in.');
+    return null;
+  }
+
+  const startTime = Date.now();
+
+  try {
+    const response = await fetch(EDGE_FUNCTION_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({ host: host.trim(), ports: ports ?? undefined }),
+      signal,
+    });
+
+    if (!response.ok) {
+      const errBody = await response.json().catch(() => ({ error: `Scan failed (${response.status})` }));
+      callbacks.onError?.(errBody.error || `Scan failed (${response.status})`);
+      return null;
+    }
+
+    if (!response.body) {
+      callbacks.onError?.('No response stream received from scanner.');
+      return null;
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let finalResult: ScanResult | null = null;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() ?? '';
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const jsonStr = line.slice(6).trim();
+        if (!jsonStr) continue;
+
+        try {
+          const event = JSON.parse(jsonStr) as SSEEvent;
+
+          if (event.type === 'start') {
+            callbacks.onStart?.(event.host, event.totalPorts, event.ports);
+          } else if (event.type === 'port') {
+            callbacks.onPort?.({
+              port: event.port,
+              status: event.status,
+              service: event.service,
+              scanned: event.scanned,
+              total: event.total,
+            });
+          } else if (event.type === 'complete') {
+            finalResult = {
+              host: event.host,
+              ports: event.results,
+              openCount: event.openCount,
+              closedCount: event.closedCount,
+              durationMs: Date.now() - startTime,
+              timestamp: Date.now(),
+            };
+            callbacks.onComplete?.(finalResult);
+          } else if (event.type === 'error') {
+            callbacks.onError?.(event.message);
+          }
+        } catch {
+          // skip malformed JSON
+        }
+      }
+    }
+
+    return finalResult;
+  } catch (err) {
+    if ((err as Error).name === 'AbortError') return null;
+    callbacks.onError?.((err as Error).message || 'Network error during scan.');
+    return null;
+  }
 }
 
 export function calculateStatistics(result: ScanResult): Statistics {
   return {
     total: result.ports.length,
-    open: result.ports.filter((p) => p.status === 'open').length,
-    closed: result.ports.filter((p) => p.status === 'closed').length,
-    filtered: result.ports.filter((p) => p.status === 'filtered').length,
-    tcp: result.ports.filter((p) => p.protocol === 'TCP').length,
-    udp: result.ports.filter((p) => p.protocol === 'UDP').length,
-    durationMs: result.durationMs, ip: result.ip,
+    open: result.openCount,
+    closed: result.closedCount,
+    durationMs: result.durationMs,
+    host: result.host,
   };
 }
 
-export function searchPorts(query: string, ports: PortInfo[] = PORTS): PortInfo[] {
-  const q = query.trim().toLowerCase();
-  if (!q) return ports;
-  return ports.filter((p) => String(p.port).includes(q) || p.service.toLowerCase().includes(q) || p.protocol.toLowerCase().includes(q));
+export function formatDuration(ms: number): string {
+  return `${(ms / 1000).toFixed(2)}s`;
 }
 
-export type FilterType = 'all' | 'open' | 'closed' | 'tcp' | 'udp' | 'favorites';
+export type FilterType = 'all' | 'open' | 'closed';
 
-export function filterPorts(filter: FilterType, ports: PortInfo[], favorites: Set<number>): PortInfo[] {
+export function filterPorts(filter: FilterType, ports: ScannedPort[]): ScannedPort[] {
   switch (filter) {
-    case 'all': return ports;
     case 'open': return ports.filter((p) => p.status === 'open');
     case 'closed': return ports.filter((p) => p.status === 'closed');
-    case 'tcp': return ports.filter((p) => p.protocol === 'TCP');
-    case 'udp': return ports.filter((p) => p.protocol === 'UDP');
-    case 'favorites': return ports.filter((p) => favorites.has(p.port));
     default: return ports;
   }
 }
 
-export function sortPorts(ports: PortInfo[], by: 'port' | 'service' = 'port'): PortInfo[] {
-  return [...ports].sort((a, b) => (by === 'port' ? a.port - b.port : a.service.localeCompare(b.service)));
+export function sortPorts(ports: ScannedPort[]): ScannedPort[] {
+  return [...ports].sort((a, b) => a.port - b.port);
 }
 
+export function searchPorts(query: string, ports: ScannedPort[]): ScannedPort[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return ports;
+  return ports.filter((p) => String(p.port).includes(q) || p.service.toLowerCase().includes(q));
+}
+
+// Report generation
+export type ReportFormat = 'text' | 'json' | 'csv';
+
 export function generateReport(result: ScanResult): string {
-  const stats = calculateStatistics(result);
-  const openPorts = result.ports.filter((p) => p.status === 'open');
-  const closedPorts = result.ports.filter((p) => p.status === 'closed');
   const lines: string[] = [];
   lines.push('========================================');
   lines.push('  PORT SCANNER DASHBOARD — SCAN REPORT');
-  lines.push('  Educational Simulator — Not a real scan');
+  lines.push('  REAL TCP Connect Scan');
   lines.push('========================================');
   lines.push('');
-  lines.push(`Target IP     : ${result.ip}`);
+  lines.push(`Target Host   : ${result.host}`);
   lines.push(`Scan Duration : ${(result.durationMs / 1000).toFixed(2)}s`);
   lines.push(`Timestamp     : ${new Date(result.timestamp).toLocaleString()}`);
   lines.push('');
   lines.push('--- SUMMARY ---');
-  lines.push(`Total Ports   : ${stats.total}`);
-  lines.push(`Open Ports    : ${stats.open}`);
-  lines.push(`Closed Ports  : ${stats.closed}`);
-  lines.push(`Filtered Ports: ${stats.filtered}`);
-  lines.push(`TCP           : ${stats.tcp}`);
-  lines.push(`UDP           : ${stats.udp}`);
+  lines.push(`Total Ports   : ${result.ports.length}`);
+  lines.push(`Open Ports    : ${result.openCount}`);
+  lines.push(`Closed Ports  : ${result.closedCount}`);
   lines.push('');
   lines.push('--- OPEN PORTS ---');
-  openPorts.forEach((p) => {
-    lines.push(`${p.port}/${p.protocol}  ${p.service}`);
-    lines.push(`  Risk: ${p.securityRisks.join('; ')}`);
-    lines.push(`  Recommendation: ${p.recommendations}`);
+  result.ports.filter((p) => p.status === 'open').forEach((p) => {
+    const info = getPortInfo(p.port);
+    lines.push(`${p.port}/TCP  ${p.service}`);
+    if (info) {
+      lines.push(`  Description    : ${info.description}`);
+      lines.push(`  Security Risks : ${info.securityRisks.join('; ')}`);
+      lines.push(`  Recommendation : ${info.recommendations}`);
+    }
     lines.push('');
   });
   lines.push('--- CLOSED PORTS ---');
-  closedPorts.forEach((p) => { lines.push(`${p.port}/${p.protocol}  ${p.service}`); });
+  result.ports.filter((p) => p.status === 'closed').forEach((p) => {
+    lines.push(`${p.port}/TCP  ${p.service}`);
+  });
   lines.push('');
-  lines.push('--- LEARNING NOTES ---');
-  lines.push('This simulator uses predefined data. A real scan would send packets to the target.');
-  lines.push('Always scan only systems you own or have explicit permission to test.');
+  lines.push('--- NOTES ---');
+  lines.push('Only scan systems you own or have explicit permission to test.');
   lines.push('');
   lines.push('Designed & Developed by Firdos Kazi');
   lines.push('https://github.com/Firdos22');
@@ -102,46 +229,33 @@ export function generateReport(result: ScanResult): string {
 }
 
 export function generateJSON(result: ScanResult): string {
-  const stats = calculateStatistics(result);
   return JSON.stringify({
-    app: 'Port Scanner Dashboard', type: 'educational-simulator',
-    disclaimer: 'No real network scanning was performed. Results are simulated.',
-    target: { ip: result.ip },
+    app: 'Port Scanner Dashboard',
+    type: 'real-tcp-connect-scan',
+    target: { host: result.host },
     scan: { durationMs: result.durationMs, timestamp: new Date(result.timestamp).toISOString() },
-    statistics: stats, ports: result.ports,
+    summary: { total: result.ports.length, open: result.openCount, closed: result.closedCount },
+    ports: result.ports,
   }, null, 2);
 }
 
 export function generateCSV(result: ScanResult): string {
-  const stats = calculateStatistics(result);
-  const escapeCSV = (val: string) => `"${val.replace(/"/g, '""')}"`;
   const rows: string[] = [];
-  rows.push('# Port Scanner Dashboard — Scan Report (Educational Simulator)');
-  rows.push(`# Target IP,${result.ip}`);
-  rows.push(`# Scan Duration,${(result.durationMs / 1000).toFixed(2)}s`);
+  rows.push('# Port Scanner Dashboard — Real TCP Connect Scan Report');
+  rows.push(`# Host,${result.host}`);
+  rows.push(`# Duration,${(result.durationMs / 1000).toFixed(2)}s`);
   rows.push(`# Timestamp,${new Date(result.timestamp).toLocaleString()}`);
-  rows.push(`# Total Ports,${stats.total}`);
-  rows.push(`# Open,${stats.open}`);
-  rows.push(`# Closed,${stats.closed}`);
-  rows.push(`# Filtered,${stats.filtered}`);
-  rows.push(`# TCP,${stats.tcp}`);
-  rows.push(`# UDP,${stats.udp}`);
+  rows.push(`# Total,${result.ports.length}`);
+  rows.push(`# Open,${result.openCount}`);
+  rows.push(`# Closed,${result.closedCount}`);
   rows.push('');
-  rows.push('Port,Protocol,Service,Status,Description,Purpose,Security Risks,Attack Examples,Best Practices,Recommendation,Educational Notes');
-  result.ports.forEach((p) => {
-    rows.push([
-      p.port, p.protocol, escapeCSV(p.service), p.status, escapeCSV(p.description),
-      escapeCSV(p.purpose), escapeCSV(p.securityRisks.join('; ')),
-      escapeCSV(p.attackExamples.join('; ')), escapeCSV(p.bestPractices.join('; ')),
-      escapeCSV(p.recommendations), escapeCSV(p.educationalNotes),
-    ].join(','));
-  });
+  rows.push('Port,Service,Status');
+  result.ports.forEach((p) => { rows.push(`${p.port},${p.service},${p.status}`); });
   return rows.join('\n');
 }
 
 export function getReportContent(result: ScanResult, format: ReportFormat): string {
   switch (format) {
-    case 'text': return generateReport(result);
     case 'json': return generateJSON(result);
     case 'csv': return generateCSV(result);
     default: return generateReport(result);
@@ -175,5 +289,3 @@ export function downloadFile(content: string, filename: string, mimeType: string
   document.body.removeChild(a);
   setTimeout(() => URL.revokeObjectURL(url), 100);
 }
-
-export function formatDuration(ms: number): string { return `${(ms / 1000).toFixed(2)}s`; }

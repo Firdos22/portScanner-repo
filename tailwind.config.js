@@ -12,10 +12,7 @@ export default {
           error: '#EF4444', errorGlow: '#F87171',
         },
       },
-      fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        mono: ['JetBrains Mono', 'monospace'],
-      },
+      fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
       animation: {
         'fade-in': 'fadeIn 0.5s ease-out', 'slide-up': 'slideUp 0.4s ease-out',
         'pulse-glow': 'pulseGlow 2s ease-in-out infinite', 'radar-sweep': 'radarSweep 3s linear infinite',

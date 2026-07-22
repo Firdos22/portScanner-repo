@@ -1,14 +1,13 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronRight, CheckCircle2, XCircle, RotateCcw, Trophy, Plug, Split, Lock, Unlock, Shield, Radar, Swords, ShieldCheck, Terminal, Zap, LayoutGrid, Gauge } from 'lucide-react';
+import { ChevronRight, CheckCircle2, XCircle, RotateCcw, Trophy, Plug, Split, Lock, Unlock, Shield, Radar, Swords, ShieldCheck, BookOpen } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { LEARN_TOPICS, QUIZ_QUESTIONS, PORTS, type QuizQuestion } from '@/data/ports';
+import { LEARN_TOPICS, QUIZ_QUESTIONS, PORT_DATABASE, type QuizQuestion } from '@/data/ports';
 import { useProgress } from '@/context/ProgressContext';
 
 const ICON_MAP: Record<string, typeof Shield> = {
   plug: Plug, split: Split, lock: Lock, unlock: Unlock, shield: Shield, radar: Radar,
-  swords: Swords, 'shield-check': ShieldCheck, terminal: Terminal, zap: Zap,
-  'layout-grid': LayoutGrid, gauge: Gauge,
+  swords: Swords, 'shield-check': ShieldCheck, 'book-open': BookOpen,
 };
 
 type Tab = 'concepts' | 'ports' | 'quiz';
@@ -66,10 +65,10 @@ function PortsTab() {
   const navigate = useNavigate();
   return (
     <div className="space-y-3">
-      {PORTS.map((port, i) => (
+      {PORT_DATABASE.map((port, i) => (
         <motion.button key={port.port} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} onClick={() => navigate(`/port/${port.port}`)} className="w-full glass-card p-4 flex items-center gap-3 text-left hover:border-cyber-glow/50 transition-colors">
           <div className="w-12 h-12 rounded-xl border border-cyber-border bg-cyber-surface/50 flex items-center justify-center flex-shrink-0"><span className="text-sm font-extrabold text-cyber-glow">{port.port}</span></div>
-          <div className="flex-1 min-w-0 text-left"><p className="text-sm font-bold text-white">{port.service}</p><p className="text-xs text-slate-400 truncate">{port.protocol} · {port.description}</p></div>
+          <div className="flex-1 min-w-0 text-left"><p className="text-sm font-bold text-white">{port.service}</p><p className="text-xs text-slate-400 truncate">{port.description}</p></div>
           <ChevronRight size={18} className="text-slate-600 flex-shrink-0" />
         </motion.button>
       ))}

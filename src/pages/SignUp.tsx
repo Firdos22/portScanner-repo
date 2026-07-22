@@ -35,7 +35,7 @@ export default function SignUp() {
         <div className="flex flex-col items-center gap-3 mb-8">
           <AnimatedShield size={72} />
           <h1 className="text-2xl font-extrabold text-white text-center">Create your account</h1>
-          <p className="text-sm text-slate-400 text-center">Start your cybersecurity learning journey.</p>
+          <p className="text-sm text-slate-400 text-center">Start scanning in seconds.</p>
         </div>
         <div className="glass-card p-6">
           <form onSubmit={handleSubmit} className="space-y-5">
@@ -56,8 +56,7 @@ export default function SignUp() {
             </div>
             {error && (
               <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="flex items-center gap-2 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3">
-                <AlertCircle size={16} className="text-red-400 flex-shrink-0" />
-                <p className="text-sm text-red-400 font-medium">{error}</p>
+                <AlertCircle size={16} className="text-red-400 flex-shrink-0" /><p className="text-sm text-red-400 font-medium">{error}</p>
               </motion.div>
             )}
             <button type="submit" disabled={loading} className="w-full gradient-primary text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 disabled:opacity-60 hover:opacity-90 transition-opacity">
