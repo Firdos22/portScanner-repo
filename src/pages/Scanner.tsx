@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Radar, Eraser, Search, X, AlertCircle, RefreshCw, CheckCircle2, Loader2, Zap, Shield, Globe } from 'lucide-react';
+import { Radar, Eraser, Search, X, AlertCircle, RefreshCw, CheckCircle2, Zap, Shield, Globe } from 'lucide-react';
 import { RadarSweep } from '@/components/CyberVisuals';
 import { PortCard } from '@/components/PortCard';
 import { useProgress } from '@/context/ProgressContext';
@@ -42,47 +42,26 @@ export default function Scanner() {
   const handleScan = useCallback(async () => {
     setError(null);
     if (!validateHost(host)) { setError('Enter a valid IP address or hostname (e.g. 127.0.0.1 or scanme.nmap.org)'); return; }
-    setScanning(true);
-    setScannedCount(0);
-    setTotalCount(0);
-    setLivePorts([]);
-    setResult(null);
-
+    setScanning(true); setScannedCount(0); setTotalCount(0); setLivePorts([]); setResult(null);
     abortRef.current = new AbortController();
 
-    const res = await performRealScan(
-      host,
-      null,
-      {
-        onStart: (_h, total) => setTotalCount(total),
-        onPort: (p: ScanProgress) => {
-          setScannedCount(p.scanned);
-          setLivePorts((prev) => [...prev, { port: p.port, status: p.status, service: p.service }]);
-        },
-        onComplete: (finalResult: ScanResult) => {
-          setResult(finalResult);
-          setLivePorts([]);
-          recordScan(finalResult);
-        },
-        onError: (msg: string) => { setError(msg); },
+    const res = await performRealScan(host, null, {
+      onStart: (_h, total) => setTotalCount(total),
+      onPort: (p: ScanProgress) => {
+        setScannedCount(p.scanned);
+        setLivePorts((prev) => [...prev, { port: p.port, status: p.status, service: p.service }]);
       },
-      abortRef.current.signal,
-    );
+      onComplete: (finalResult: ScanResult) => { setResult(finalResult); setLivePorts([]); recordScan(finalResult); },
+      onError: (msg: string) => { setError(msg); },
+    }, abortRef.current.signal);
 
     setScanning(false);
-    if (!res && !error) {
-      // scan was aborted or failed silently
-    }
-  }, [host, recordScan, error]);
+    void res;
+  }, [host, recordScan]);
 
-  const handleStop = () => {
-    abortRef.current?.abort();
-    setScanning(false);
-  };
-
+  const handleStop = () => { abortRef.current?.abort(); setScanning(false); };
   const clearAll = () => { setHost(''); setError(null); setResult(null); setQuery(''); setFilter('all'); setLivePorts([]); };
   const openPort = (port: number) => { recordViewedPort(port); navigate(`/port/${port}`); };
-
   const progressPct = totalCount > 0 ? Math.round((scannedCount / totalCount) * 100) : 0;
 
   return (
@@ -94,19 +73,13 @@ export default function Scanner() {
 
       <div className={`flex items-center gap-3 bg-cyber-surface/50 border rounded-xl px-4 py-3.5 ${error ? 'border-red-500/50' : 'border-cyber-border'}`}>
         <Globe size={18} className="text-cyber-glow flex-shrink-0" />
-        <input
-          value={host} onChange={(e) => setHost(e.target.value)}
-          placeholder="127.0.0.1 or scanme.nmap.org"
-          className="flex-1 bg-transparent text-white text-base font-semibold tracking-wide placeholder:text-slate-600"
-          onKeyDown={(e) => { if (e.key === 'Enter' && !scanning) handleScan(); }}
-        />
+        <input value={host} onChange={(e) => setHost(e.target.value)} placeholder="127.0.0.1 or scanme.nmap.org" className="flex-1 bg-transparent text-white text-base font-semibold tracking-wide placeholder:text-slate-600" onKeyDown={(e) => { if (e.key === 'Enter' && !scanning) handleScan(); }} />
         {host && !scanning && <button onClick={() => setHost('')} className="text-slate-600 hover:text-slate-400"><X size={16} /></button>}
       </div>
 
       <div className="flex gap-2 flex-wrap">
         {QUICK_TARGETS.map((t) => (
-          <button key={t.host} onClick={() => setHost(t.host)} disabled={scanning}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold bg-cyber-surface/40 border border-cyber-border text-slate-400 hover:text-white hover:border-cyber-glow/30 transition-all disabled:opacity-40">
+          <button key={t.host} onClick={() => setHost(t.host)} disabled={scanning} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold bg-cyber-surface/40 border border-cyber-border text-slate-400 hover:text-white hover:border-cyber-glow/30 transition-all disabled:opacity-40">
             <Zap size={12} className="text-cyber-accentGlow" /> {t.label}
           </button>
         ))}
@@ -170,31 +143,26 @@ export default function Scanner() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-lg font-bold text-white">Results · {result.host}</h2>
-              <p className="text-xs text-slate-500 mt-0.5">
-                {result.openCount} open · {result.closedCount} closed · {formatDuration(result.durationMs)}
-              </p>
+              <p className="text-xs text-slate-500 mt-0.5">{result.openCount} open · {result.closedCount} closed · {formatDuration(result.durationMs)}</p>
             </div>
             <button onClick={handleScan} className="flex items-center gap-1.5 text-sm font-bold text-cyber-glow border border-cyber-border rounded-xl px-3.5 py-2 hover:bg-cyber-surface/30 transition-colors"><RefreshCw size={14} /> Rescan</button>
           </div>
-
           <div className="flex items-center gap-3 bg-cyber-surface/50 border border-cyber-border rounded-xl px-4 py-3 mb-4">
             <Search size={16} className="text-slate-600 flex-shrink-0" />
             <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search port or service…" className="flex-1 bg-transparent text-white text-sm placeholder:text-slate-600" />
             {query && <button onClick={() => setQuery('')} className="text-slate-600 hover:text-slate-400"><X size={14} /></button>}
           </div>
-
           <div className="flex gap-2 mb-4">
             {FILTERS.map((f) => (
               <button key={f.key} onClick={() => setFilter(f.key)} className={`px-3.5 py-2 rounded-full text-xs font-bold border transition-all ${filter === f.key ? 'gradient-primary text-white border-transparent' : 'bg-cyber-surface/50 text-slate-400 border-cyber-border hover:text-white'}`}>{f.label}</button>
             ))}
           </div>
-
           <div>
             {visiblePorts.length === 0 ? (
               <div className="py-12 text-center"><p className="text-sm text-slate-600">No ports match your search or filter.</p></div>
             ) : (
               visiblePorts.map((port, index) => (
-                <PortCard key={port.port} port={port} index={index} onClick={() => openPort(port.port)} />
+                <PortCard key={port.port} port={port} index={index} host={result.host} scanTimestamp={result.timestamp} onClick={() => openPort(port.port)} />
               ))
             )}
           </div>
@@ -210,7 +178,7 @@ export default function Scanner() {
 
       <div className="flex items-start gap-2.5 bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 mt-4">
         <Shield size={16} className="text-amber-500 flex-shrink-0 mt-0.5" />
-        <p className="text-xs text-slate-400 leading-relaxed">This tool performs real TCP connect scanning. Only scan hosts you own or have explicit permission to test. Unauthorized scanning may be illegal.</p>
+        <p className="text-xs text-slate-400 leading-relaxed">This tool performs real TCP connect scanning. Only scan hosts you own or have explicit permission to test. Each port result has its own download button for individual reports.</p>
       </div>
     </div>
   );

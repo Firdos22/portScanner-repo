@@ -45,12 +45,8 @@ export type ScanCallbacks = {
 
 export function validateHost(host: string): boolean {
   const trimmed = host.trim();
-  // IPv4
   const parts = trimmed.split('.');
-  if (parts.length === 4 && parts.every((p) => /^\d+$/.test(p) && Number(p) >= 0 && Number(p) <= 255)) {
-    return true;
-  }
-  // Hostname
+  if (parts.length === 4 && parts.every((p) => /^\d+$/.test(p) && Number(p) >= 0 && Number(p) <= 255)) return true;
   return /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/.test(trimmed);
 }
 
@@ -73,10 +69,7 @@ export async function performRealScan(
   try {
     const response = await fetch(EDGE_FUNCTION_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${accessToken}`,
-      },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${accessToken}` },
       body: JSON.stringify({ host: host.trim(), ports: ports ?? undefined }),
       signal,
     });
@@ -87,10 +80,7 @@ export async function performRealScan(
       return null;
     }
 
-    if (!response.body) {
-      callbacks.onError?.('No response stream received from scanner.');
-      return null;
-    }
+    if (!response.body) { callbacks.onError?.('No response stream received.'); return null; }
 
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
@@ -100,7 +90,6 @@ export async function performRealScan(
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
-
       buffer += decoder.decode(value, { stream: true });
       const lines = buffer.split('\n');
       buffer = lines.pop() ?? '';
@@ -109,39 +98,17 @@ export async function performRealScan(
         if (!line.startsWith('data: ')) continue;
         const jsonStr = line.slice(6).trim();
         if (!jsonStr) continue;
-
         try {
           const event = JSON.parse(jsonStr) as SSEEvent;
-
-          if (event.type === 'start') {
-            callbacks.onStart?.(event.host, event.totalPorts, event.ports);
-          } else if (event.type === 'port') {
-            callbacks.onPort?.({
-              port: event.port,
-              status: event.status,
-              service: event.service,
-              scanned: event.scanned,
-              total: event.total,
-            });
-          } else if (event.type === 'complete') {
-            finalResult = {
-              host: event.host,
-              ports: event.results,
-              openCount: event.openCount,
-              closedCount: event.closedCount,
-              durationMs: Date.now() - startTime,
-              timestamp: Date.now(),
-            };
+          if (event.type === 'start') callbacks.onStart?.(event.host, event.totalPorts, event.ports);
+          else if (event.type === 'port') callbacks.onPort?.({ port: event.port, status: event.status, service: event.service, scanned: event.scanned, total: event.total });
+          else if (event.type === 'complete') {
+            finalResult = { host: event.host, ports: event.results, openCount: event.openCount, closedCount: event.closedCount, durationMs: Date.now() - startTime, timestamp: Date.now() };
             callbacks.onComplete?.(finalResult);
-          } else if (event.type === 'error') {
-            callbacks.onError?.(event.message);
-          }
-        } catch {
-          // skip malformed JSON
-        }
+          } else if (event.type === 'error') callbacks.onError?.(event.message);
+        } catch { /* skip */ }
       }
     }
-
     return finalResult;
   } catch (err) {
     if ((err as Error).name === 'AbortError') return null;
@@ -151,18 +118,10 @@ export async function performRealScan(
 }
 
 export function calculateStatistics(result: ScanResult): Statistics {
-  return {
-    total: result.ports.length,
-    open: result.openCount,
-    closed: result.closedCount,
-    durationMs: result.durationMs,
-    host: result.host,
-  };
+  return { total: result.ports.length, open: result.openCount, closed: result.closedCount, durationMs: result.durationMs, host: result.host };
 }
 
-export function formatDuration(ms: number): string {
-  return `${(ms / 1000).toFixed(2)}s`;
-}
+export function formatDuration(ms: number): string { return `${(ms / 1000).toFixed(2)}s`; }
 
 export type FilterType = 'all' | 'open' | 'closed';
 
@@ -174,9 +133,7 @@ export function filterPorts(filter: FilterType, ports: ScannedPort[]): ScannedPo
   }
 }
 
-export function sortPorts(ports: ScannedPort[]): ScannedPort[] {
-  return [...ports].sort((a, b) => a.port - b.port);
-}
+export function sortPorts(ports: ScannedPort[]): ScannedPort[] { return [...ports].sort((a, b) => a.port - b.port); }
 
 export function searchPorts(query: string, ports: ScannedPort[]): ScannedPort[] {
   const q = query.trim().toLowerCase();
@@ -184,7 +141,8 @@ export function searchPorts(query: string, ports: ScannedPort[]): ScannedPort[] 
   return ports.filter((p) => String(p.port).includes(q) || p.service.toLowerCase().includes(q));
 }
 
-// Report generation
+// ===== Report generation =====
+
 export type ReportFormat = 'text' | 'json' | 'csv';
 
 export function generateReport(result: ScanResult): string {
@@ -215,11 +173,8 @@ export function generateReport(result: ScanResult): string {
     lines.push('');
   });
   lines.push('--- CLOSED PORTS ---');
-  result.ports.filter((p) => p.status === 'closed').forEach((p) => {
-    lines.push(`${p.port}/TCP  ${p.service}`);
-  });
+  result.ports.filter((p) => p.status === 'closed').forEach((p) => { lines.push(`${p.port}/TCP  ${p.service}`); });
   lines.push('');
-  lines.push('--- NOTES ---');
   lines.push('Only scan systems you own or have explicit permission to test.');
   lines.push('');
   lines.push('Designed & Developed by Firdos Kazi');
@@ -230,8 +185,7 @@ export function generateReport(result: ScanResult): string {
 
 export function generateJSON(result: ScanResult): string {
   return JSON.stringify({
-    app: 'Port Scanner Dashboard',
-    type: 'real-tcp-connect-scan',
+    app: 'Port Scanner Dashboard', type: 'real-tcp-connect-scan',
     target: { host: result.host },
     scan: { durationMs: result.durationMs, timestamp: new Date(result.timestamp).toISOString() },
     summary: { total: result.ports.length, open: result.openCount, closed: result.closedCount },
@@ -262,20 +216,108 @@ export function getReportContent(result: ScanResult, format: ReportFormat): stri
   }
 }
 
-export function getReportMimeType(format: ReportFormat): string {
+// ===== Per-port report generation =====
+
+export function generatePortReport(port: ScannedPort, host: string, scanTimestamp: number): string {
+  const info = getPortInfo(port.port);
+  const lines: string[] = [];
+  lines.push('========================================');
+  lines.push('  PORT SCANNER DASHBOARD');
+  lines.push('  INDIVIDUAL PORT REPORT');
+  lines.push('========================================');
+  lines.push('');
+  lines.push(`Target Host   : ${host}`);
+  lines.push(`Port          : ${port.port}/TCP`);
+  lines.push(`Service       : ${port.service}`);
+  lines.push(`Status        : ${port.status.toUpperCase()}`);
+  lines.push(`Scan Time     : ${new Date(scanTimestamp).toLocaleString()}`);
+  lines.push('');
+  if (info) {
+    lines.push('--- DESCRIPTION ---');
+    lines.push(info.description);
+    lines.push('');
+    lines.push('--- PURPOSE ---');
+    lines.push(info.purpose);
+    lines.push('');
+    lines.push('--- COMMON USES ---');
+    info.commonUses.forEach((u) => lines.push(`  - ${u}`));
+    lines.push('');
+    lines.push('--- SECURITY RISKS ---');
+    info.securityRisks.forEach((r) => lines.push(`  - ${r}`));
+    lines.push('');
+    lines.push('--- ATTACK EXAMPLES ---');
+    info.attackExamples.forEach((a) => lines.push(`  - ${a}`));
+    lines.push('');
+    lines.push('--- BEST PRACTICES ---');
+    info.bestPractices.forEach((b) => lines.push(`  - ${b}`));
+    lines.push('');
+    lines.push('--- RECOMMENDATION ---');
+    lines.push(info.recommendations);
+    lines.push('');
+    lines.push('--- EDUCATIONAL NOTES ---');
+    lines.push(info.educationalNotes);
+  } else {
+    lines.push('No detailed information available for this port in the database.');
+  }
+  lines.push('');
+  lines.push('========================================');
+  lines.push('Designed & Developed by Firdos Kazi');
+  lines.push('https://github.com/Firdos22');
+  lines.push('========================================');
+  return lines.join('\n');
+}
+
+export function generatePortJSON(port: ScannedPort, host: string, scanTimestamp: number): string {
+  const info = getPortInfo(port.port);
+  return JSON.stringify({
+    app: 'Port Scanner Dashboard', type: 'individual-port-report',
+    target: { host }, port: { number: port.port, protocol: 'TCP', service: port.service, status: port.status },
+    scanTime: new Date(scanTimestamp).toISOString(),
+    details: info ?? null,
+  }, null, 2);
+}
+
+export function generatePortCSV(port: ScannedPort, host: string, scanTimestamp: number): string {
+  const info = getPortInfo(port.port);
+  const rows: string[] = [];
+  rows.push('# Port Scanner Dashboard — Individual Port Report');
+  rows.push(`# Host,${host}`);
+  rows.push(`# Port,${port.port}`);
+  rows.push(`# Service,${port.service}`);
+  rows.push(`# Status,${port.status}`);
+  rows.push(`# Scan Time,${new Date(scanTimestamp).toLocaleString()}`);
+  rows.push('');
+  if (info) {
+    rows.push('Field,Value');
+    rows.push(`Description,"${info.description}"`);
+    rows.push(`Purpose,"${info.purpose}"`);
+    rows.push(`Common Uses,"${info.commonUses.join('; ')}"`);
+    rows.push(`Security Risks,"${info.securityRisks.join('; ')}"`);
+    rows.push(`Attack Examples,"${info.attackExamples.join('; ')}"`);
+    rows.push(`Best Practices,"${info.bestPractices.join('; ')}"`);
+    rows.push(`Recommendation,"${info.recommendations}"`);
+    rows.push(`Educational Notes,"${info.educationalNotes}"`);
+  } else {
+    rows.push('Field,Value');
+    rows.push('Info,"No detailed information available"');
+  }
+  return rows.join('\n');
+}
+
+export function getPortReportContent(port: ScannedPort, host: string, scanTimestamp: number, format: ReportFormat): string {
   switch (format) {
-    case 'json': return 'application/json';
-    case 'csv': return 'text/csv';
-    default: return 'text/plain';
+    case 'json': return generatePortJSON(port, host, scanTimestamp);
+    case 'csv': return generatePortCSV(port, host, scanTimestamp);
+    default: return generatePortReport(port, host, scanTimestamp);
   }
 }
 
+export function getReportMimeType(format: ReportFormat): string {
+  switch (format) { case 'json': return 'application/json'; case 'csv': return 'text/csv'; default: return 'text/plain'; }
+}
+
 export function getReportFileExtension(format: ReportFormat): string {
-  switch (format) {
-    case 'json': return 'json';
-    case 'csv': return 'csv';
-    default: return 'txt';
-  }
+  switch (format) { case 'json': return 'json'; case 'csv': return 'csv'; default: return 'txt'; }
 }
 
 export function downloadFile(content: string, filename: string, mimeType: string): void {

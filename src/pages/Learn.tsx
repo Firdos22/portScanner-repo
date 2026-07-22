@@ -95,7 +95,7 @@ function QuizTab() {
         <Trophy size={48} className="text-cyber-accentGlow mx-auto mb-4" />
         <h3 className="text-xl font-extrabold text-white mb-2">Quiz Complete!</h3>
         <p className="text-3xl font-extrabold gradient-text mb-1">{score} / {QUIZ_QUESTIONS.length}</p>
-        <p className="text-sm text-slate-400 mb-6">{perfect ? 'Perfect score! You are a quiz champion!' : score >= 6 ? 'Great job!' : 'Keep learning!'}</p>
+        <p className="text-sm text-slate-400 mb-6">{perfect ? 'Perfect score!' : score >= 6 ? 'Great job!' : 'Keep learning!'}</p>
         <div className="space-y-2 text-left mb-6">
           {QUIZ_QUESTIONS.map((q) => {
             const correct = answers[q.id] === q.correctIndex;

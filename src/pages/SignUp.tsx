@@ -16,8 +16,7 @@ export default function SignUp() {
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
+    e.preventDefault(); setError(null);
     if (!email.trim() || !password) { setError('Please enter your email and a password.'); return; }
     if (password.length < 6) { setError('Password must be at least 6 characters.'); return; }
     if (password !== confirm) { setError('Passwords do not match.'); return; }

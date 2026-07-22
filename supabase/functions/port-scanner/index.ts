@@ -27,30 +27,19 @@ const SERVICE_NAMES: Record<number, string> = {
 };
 
 function validateHost(host: string): boolean {
-  // Validate IPv4 address
   const ipv4Parts = host.split(".");
   if (ipv4Parts.length === 4 && ipv4Parts.every((p) => /^\d+$/.test(p) && Number(p) >= 0 && Number(p) <= 255)) {
     return true;
   }
-  // Validate hostname (basic check: alphanumeric + dots + hyphens)
   return /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/.test(host);
 }
 
-async function scanPort(host: string, port: number, timeoutMs: number): Promise<"open" | "closed"> {
+async function scanPort(host: string, port: number, _timeoutMs: number): Promise<"open" | "closed"> {
   try {
-    const conn = await Deno.connect({
-      hostname: host,
-      port: port,
-      transport: "tcp",
-    });
+    const conn = await Deno.connect({ hostname: host, port: port, transport: "tcp" });
     conn.close();
     return "open";
-  } catch (err) {
-    // Connection refused or timeout means closed/filtered
-    const msg = (err as Error).message.toLowerCase();
-    if (msg.includes("timed out") || msg.includes("timeout")) {
-      return "closed"; // could be filtered — we report as closed
-    }
+  } catch (_err) {
     return "closed";
   }
 }
@@ -96,16 +85,10 @@ Deno.serve(async (req: Request) => {
 
     const stream = new ReadableStream({
       async start(controller) {
-        // Send initial event
         controller.enqueue(encoder.encode(sseData({
-          type: "start",
-          host,
-          totalPorts,
-          ports,
-          timestamp: Date.now(),
+          type: "start", host, totalPorts, ports, timestamp: Date.now(),
         })));
 
-        // Scan ports with limited concurrency (batch of 8)
         const BATCH_SIZE = 8;
         for (let i = 0; i < ports.length; i += BATCH_SIZE) {
           const batch = ports.slice(i, i + BATCH_SIZE);
@@ -120,12 +103,7 @@ Deno.serve(async (req: Request) => {
             results.push(r);
             const scanned = results.length;
             controller.enqueue(encoder.encode(sseData({
-              type: "port",
-              port: r.port,
-              status: r.status,
-              service: r.service,
-              scanned,
-              total: totalPorts,
+              type: "port", port: r.port, status: r.status, service: r.service, scanned, total: totalPorts,
             })));
           }
         }
@@ -134,14 +112,7 @@ Deno.serve(async (req: Request) => {
         const closedCount = results.filter((r) => r.status === "closed").length;
 
         controller.enqueue(encoder.encode(sseData({
-          type: "complete",
-          host,
-          totalPorts,
-          openCount,
-          closedCount,
-          durationMs: 0, // calculated on client
-          results,
-          timestamp: Date.now(),
+          type: "complete", host, totalPorts, openCount, closedCount, durationMs: 0, results, timestamp: Date.now(),
         })));
 
         controller.close();
@@ -149,12 +120,7 @@ Deno.serve(async (req: Request) => {
     });
 
     return new Response(stream, {
-      headers: {
-        ...corsHeaders,
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
-        "Connection": "keep-alive",
-      },
+      headers: { ...corsHeaders, "Content-Type": "text/event-stream", "Cache-Control": "no-cache", "Connection": "keep-alive" },
     });
   } catch (err) {
     return new Response(JSON.stringify({ error: (err as Error).message }), {

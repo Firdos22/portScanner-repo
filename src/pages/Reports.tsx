@@ -27,25 +27,17 @@ export default function Reports() {
 
   const handleDownload = () => {
     if (!last) return;
-    const filename = `scan-report-${safeHost}.${getReportFileExtension(format)}`;
-    downloadFile(content, filename, getReportMimeType(format));
-    recordReport();
-    setDownloaded(true);
-    setTimeout(() => setDownloaded(false), 2500);
+    downloadFile(content, `scan-report-${safeHost}.${getReportFileExtension(format)}`, getReportMimeType(format));
+    recordReport(); setDownloaded(true); setTimeout(() => setDownloaded(false), 2500);
   };
 
   const handleShare = async () => {
     if (!last) return;
     try {
-      if ('share' in navigator) {
-        await navigator.share({ text: content, title: 'Port Scanner Dashboard Report' });
-      } else {
-        await window.navigator.clipboard.writeText(content);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2500);
-      }
+      if ('share' in navigator) await navigator.share({ text: content, title: 'Port Scanner Dashboard Report' });
+      else { await window.navigator.clipboard.writeText(content); setCopied(true); setTimeout(() => setCopied(false), 2500); }
       recordReport();
-    } catch { /* user cancelled */ }
+    } catch { /* cancelled */ }
   };
 
   return (
@@ -70,7 +62,7 @@ export default function Reports() {
               </div>
             </div>
           )}
-          <p className="text-xs font-extrabold tracking-widest text-slate-500 mb-3">DOWNLOAD FORMAT</p>
+          <p className="text-xs font-extrabold tracking-widest text-slate-500 mb-3">FULL SCAN REPORT — DOWNLOAD FORMAT</p>
           <div className="grid grid-cols-3 gap-3 mb-4">
             {FORMAT_OPTIONS.map((opt) => {
               const active = format === opt.key;
@@ -94,7 +86,7 @@ export default function Reports() {
               {copied ? <><CheckCircle2 size={16} /> Copied!</> : 'share' in navigator ? <><Share2 size={16} /> Share</> : <><Copy size={16} /> Copy</>}
             </button>
           </div>
-          <p className="text-xs text-slate-600 leading-relaxed">Reports include host, open/closed ports, statistics, and recommendations. Download in your preferred format or share directly.</p>
+          <p className="text-xs text-slate-600 leading-relaxed">Download the full scan report above, or download individual port reports directly from the Scanner results — each port card has its own download button.</p>
         </>
       )}
     </div>

@@ -62,18 +62,11 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
       const hosts = prev.scannedHosts.includes(result.host) ? prev.scannedHosts : [...prev.scannedHosts, result.host];
       return { ...prev, scannedHosts: hosts, lastScan: result, scanCount: prev.scanCount + 1 };
     });
-    // Persist to Supabase scan_history table
     if (user) {
       supabase.from('scan_history').insert({
-        host: result.host,
-        total_ports: result.ports.length,
-        open_count: result.openCount,
-        closed_count: result.closedCount,
-        duration_ms: result.durationMs,
-        results: result.ports,
-      }).then(({ error }) => {
-        if (error) console.warn('Failed to save scan history:', error.message);
-      });
+        host: result.host, total_ports: result.ports.length, open_count: result.openCount,
+        closed_count: result.closedCount, duration_ms: result.durationMs, results: result.ports,
+      }).then(({ error }) => { if (error) console.warn('Failed to save scan history:', error.message); });
     }
   }, [persist, user]);
 

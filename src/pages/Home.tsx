@@ -6,7 +6,7 @@ import { useProgress } from '@/context/ProgressContext';
 import { formatDuration } from '@/utils/scanner';
 import { DISCLAIMER } from '@/data/ports';
 
-const TIP = 'A TCP connect scan completes the full three-way handshake (SYN, SYN-ACK, ACK) to determine if a port is open. This is the most reliable scan type and works without raw socket access.';
+const TIP = 'A TCP connect scan completes the full three-way handshake (SYN, SYN-ACK, ACK) to determine if a port is open. Each scanned port can be downloaded as an individual report.';
 
 export default function Home() {
   const navigate = useNavigate();

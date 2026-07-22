@@ -38,7 +38,6 @@ export default function About() {
       </div>
       <a href={DEVELOPER.github} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 border border-cyber-border rounded-xl py-3.5 text-sm font-bold text-cyber-accentGlow hover:border-cyber-glow/40 transition-colors"><Github size={18} /> {DEVELOPER.github}</a>
       <p className="text-xs text-slate-600 text-center mt-8">© {new Date().getFullYear()} {DEVELOPER.name}. All rights reserved.</p>
-      <p className="text-xs text-slate-600 text-center mt-1">Built for educational and authorized security testing purposes.</p>
     </div>
   );
 }
