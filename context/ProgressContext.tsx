@@ -13,7 +13,7 @@ import type { ScanResult } from '@/utils/scanner';
 export type Progress = {
   favorites: number[];
   achievements: string[];
-  scannedIPs: string[];
+  scannedHosts: string[];
   viewedPorts: number[];
   quizCompleted: boolean;
   quizPerfect: boolean;
@@ -25,7 +25,7 @@ export type Progress = {
 const DEFAULTS: Progress = {
   favorites: [],
   achievements: [],
-  scannedIPs: [],
+  scannedHosts: [],
   viewedPorts: [],
   quizCompleted: false,
   quizPerfect: false,
