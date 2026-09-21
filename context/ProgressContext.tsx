@@ -91,8 +91,8 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
 
   const recordScan = useCallback((result: ScanResult) => {
     setProgress((prev) => {
-      const ips = prev.scannedIPs.includes(result.ip) ? prev.scannedIPs : [...prev.scannedIPs, result.ip];
-      const next: Progress = { ...prev, scannedIPs: ips, lastScan: result, scanCount: prev.scanCount + 1 };
+      const hosts = prev.scannedHosts.includes(result.host) ? prev.scannedHosts : [...prev.scannedHosts, result.host];
+      const next: Progress = { ...prev, scannedHosts: hosts, lastScan: result, scanCount: prev.scanCount + 1 };
       AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next)).catch(() => {});
       return next;
     });
@@ -128,10 +128,10 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
   // Auto-unlock milestone achievements based on progress.
   useEffect(() => {
     if (progress.scanCount >= 1) unlockAchievement('first-scan');
-    if (progress.scannedIPs.length >= 5) unlockAchievement('network-explorer');
+    if (progress.scannedHosts.length >= 5) unlockAchievement('network-explorer');
     if (progress.viewedPorts.length >= 10) unlockAchievement('port-master');
     if (progress.reportGenerated) unlockAchievement('security-analyst');
-  }, [progress.scanCount, progress.scannedIPs.length, progress.viewedPorts.length, progress.reportGenerated, unlockAchievement]);
+  }, [progress.scanCount, progress.scannedHosts.length, progress.viewedPorts.length, progress.reportGenerated, unlockAchievement]);
 
   const dismissToast = useCallback(() => setToastId(null), []);
 

@@ -1,7 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 import { useSettings } from '@/utils/settings';
 import { Text } from './ThemedText';
-import type { PortStatus } from '@/data/ports';
+import type { PortStatus } from '@/utils/scanner';
 
 export function StatusBadge({ status }: { status: PortStatus }) {
   const { colors } = useSettings();

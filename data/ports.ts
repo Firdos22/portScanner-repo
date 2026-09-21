@@ -186,11 +186,15 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
   { id: 'q8', question: 'What is the recommended replacement for FTP?', options: ['Telnet', 'SFTP or FTPS', 'HTTP', 'SMTP'], correctIndex: 1, explanation: 'SFTP (over SSH) or FTPS (FTP over TLS) add encryption that plain FTP lacks.' },
 ];
 
+export function getPortInfo(port: number): PortInfo | undefined {
+  return PORTS.find((p) => p.port === port);
+}
+
 export type Achievement = { id: string; title: string; description: string; icon: string };
 
 export const ACHIEVEMENTS: Achievement[] = [
-  { id: 'first-scan', title: 'First Scan', description: 'Completed your first simulated scan.', icon: 'rocket' },
-  { id: 'network-explorer', title: 'Network Explorer', description: 'Scanned 5 different IP addresses.', icon: 'compass' },
+  { id: 'first-scan', title: 'First Scan', description: 'Completed your first real scan.', icon: 'rocket' },
+  { id: 'network-explorer', title: 'Network Explorer', description: 'Scanned 5 different targets.', icon: 'compass' },
   { id: 'port-master', title: 'Port Master', description: 'Viewed details for 10 different ports.', icon: 'award' },
   { id: 'cyber-learner', title: 'Cyber Learner', description: 'Completed a quiz.', icon: 'book-open' },
   { id: 'security-analyst', title: 'Security Analyst', description: 'Generated a scan report.', icon: 'file-chart-column' },

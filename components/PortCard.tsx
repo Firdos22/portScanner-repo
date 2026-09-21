@@ -4,15 +4,18 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSettings } from '@/utils/settings';
 import { Text } from './ThemedText';
 import { StatusBadge } from './StatusBadge';
-import type { PortInfo } from '@/data/ports';
+import { getPortInfo } from '@/data/ports';
+import type { ScannedPort } from '@/utils/scanner';
 
 export function PortCard({ port, index, isFavorite, onPress, onToggleFavorite }: {
-  port: PortInfo; index: number; isFavorite: boolean; onPress: () => void; onToggleFavorite: () => void;
+  port: ScannedPort; index: number; isFavorite: boolean; onPress: () => void; onToggleFavorite: () => void;
 }) {
   const { colors, settings } = useSettings();
   const glow = port.status === 'open' ? colors.successGlow : port.status === 'closed' ? colors.errorGlow : colors.warning;
+  const info = getPortInfo(port.port);
+  const description = info ? info.description : 'No detailed information available for this port.';
   return (
-    <Animated.View entering={settings.animationsEnabled ? FadeInDown.delay(index * 70).springify() : undefined}>
+    <Animated.View entering={settings.animationsEnabled ? FadeInDown.delay(index * 50).springify() : undefined}>
       <Pressable onPress={onPress}>
         {({ pressed }) => (
           <View style={[styles.card, { backgroundColor: colors.surface, borderColor: `${glow}44`, transform: [{ scale: pressed ? 0.98 : 1 }] }]}>
@@ -24,7 +27,7 @@ export function PortCard({ port, index, isFavorite, onPress, onToggleFavorite }:
                 </View>
                 <View style={styles.info}>
                   <Text style={styles.service}>{port.service}</Text>
-                  <Text style={[styles.proto, { color: colors.textSecondary }]}>{port.protocol} · {port.description}</Text>
+                  <Text style={[styles.proto, { color: colors.textSecondary }]}>{port.protocol} · {description}</Text>
                 </View>
               </View>
               <View style={styles.right}>

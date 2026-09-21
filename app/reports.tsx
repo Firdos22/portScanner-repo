@@ -54,12 +54,7 @@ export default function ReportsScreen() {
               <View style={[styles.summaryCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                 <Text style={styles.summaryTitle}>Scan Summary</Text>
                 <View style={styles.summaryGrid}>
-                  <SummaryItem colors={colors} label="Target" value={stats.ip} />
-                  <SummaryItem colors={colors} label="Total" value={String(stats.total)} />
-                  <SummaryItem colors={colors} label="Open" value={String(stats.open)} />
-                  <SummaryItem colors={colors} label="Closed" value={String(stats.closed)} />
-                  <SummaryItem colors={colors} label="TCP" value={String(stats.tcp)} />
-                  <SummaryItem colors={colors} label="UDP" value={String(stats.udp)} />
+                  <SummaryItem colors={colors} label="Target" value={stats.host} />
                 </View>
               </View>
             )}
@@ -87,7 +82,7 @@ export default function ReportsScreen() {
             </View>
 
             <Text style={[styles.note, { color: colors.textMuted }]}>
-              Reports include IP, open/closed ports, statistics, learning notes, and recommendations. Sharing uses the native share sheet. Educational simulator only — no real scanning.
+              Reports include target host, open/closed/filtered ports, and scan statistics. Only scan systems you own or have permission to test.
             </Text>
           </>
         )}

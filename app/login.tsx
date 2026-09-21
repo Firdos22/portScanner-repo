@@ -44,7 +44,7 @@ export default function LoginScreen() {
           <Animated.View entering={settings.animationsEnabled ? FadeInDown.delay(100).springify() : undefined} style={styles.header}>
             <AnimatedShield size={76} />
             <Text style={styles.title}>Port Scanner Dashboard</Text>
-            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Educational Network Port Scanner Simulator</Text>
+            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Real TCP Port Scanner + Network Analysis</Text>
           </Animated.View>
 
           <Animated.View entering={settings.animationsEnabled ? FadeInDown.delay(250).springify() : undefined} style={styles.formCard}>
@@ -86,7 +86,7 @@ export default function LoginScreen() {
 
           <Animated.View entering={settings.animationsEnabled ? FadeInDown.delay(400).springify() : undefined} style={styles.disclaimer}>
             <Shield size={14} color={colors.textMuted} />
-            <Text style={[styles.disclaimerText, { color: colors.textMuted }]}>Educational simulator only. No real network scanning.</Text>
+            <Text style={[styles.disclaimerText, { color: colors.textMuted }]}>Real TCP scanning. Only scan systems you own or have permission to test.</Text>
           </Animated.View>
         </ScrollView>
       </KeyboardAvoidingView>

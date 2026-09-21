@@ -32,7 +32,7 @@ export default function HomeScreen() {
         <Animated.View entering={settings.animationsEnabled ? FadeInDown.springify() : undefined} style={styles.header}>
           <AnimatedShield size={64} />
           <Text style={styles.title}>Port Scanner Dashboard</Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Educational Network Port Scanner Simulator</Text>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Real TCP Port Scanner + Network Analysis</Text>
         </Animated.View>
 
         <Animated.View entering={settings.animationsEnabled ? FadeInDown.delay(120).springify() : undefined} style={styles.statsRow}>
@@ -56,7 +56,7 @@ export default function HomeScreen() {
             <SectionCard colors={colors} title="Recent Scan" icon={<Radar size={18} color={colors.accentGlow} />}>
               <View style={styles.scanRow}>
                 <View>
-                  <Text style={styles.scanIp}>{progress.lastScan.ip}</Text>
+                  <Text style={styles.scanIp}>{progress.lastScan.host}</Text>
                   <Text style={[styles.scanMeta, { color: colors.textSecondary }]}>{progress.lastScan.ports.length} ports · {formatDuration(progress.lastScan.durationMs)}</Text>
                 </View>
                 <Clock size={18} color={colors.textMuted} />
@@ -70,7 +70,7 @@ export default function HomeScreen() {
         ) : (
           <Animated.View entering={settings.animationsEnabled ? FadeInDown.delay(280).springify() : undefined}>
             <SectionCard colors={colors} title="Continue Learning" icon={<GraduationCap size={18} color={colors.accentGlow} />}>
-              <Text style={[styles.tipText, { color: colors.textSecondary }]}>Run your first simulated scan to unlock results, statistics, and learning notes.</Text>
+              <Text style={[styles.tipText, { color: colors.textSecondary }]}>Run your first real scan to see live results, statistics, and port details.</Text>
               <Pressable style={[styles.cta, { borderColor: colors.borderStrong }]} onPress={() => { haptic('light'); router.push('/scanner'); }}>
                 <Text style={[styles.ctaText, { color: colors.primaryGlow }]}>Start a Scan</Text>
                 <ChevronRight size={16} color={colors.primaryGlow} />
@@ -80,7 +80,7 @@ export default function HomeScreen() {
         )}
 
         <Animated.View entering={settings.animationsEnabled ? FadeInUp.delay(360).springify() : undefined} style={[styles.disclaimer, { backgroundColor: `${colors.warning}12`, borderColor: `${colors.warning}44` }]}>
-          <Text style={[styles.disclaimerText, { color: colors.textSecondary }]}>This app is an educational simulator. It does not perform real network scanning. All results are simulated.</Text>
+          <Text style={[styles.disclaimerText, { color: colors.textSecondary }]}>Real TCP connect scanning via Supabase Edge Functions. Only scan systems you own or have explicit permission to test.</Text>
         </Animated.View>
       </ScrollView>
     </View>

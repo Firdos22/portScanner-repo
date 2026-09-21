@@ -68,4 +68,4 @@ export const DEVELOPER = {
 } as const;
 
 export const DISCLAIMER =
-  'This application is an educational mobile simulator. It does not perform real network scanning or communicate with external systems. All scan results are simulated using predefined data.';
+  'This application performs real TCP connect port scanning via Supabase Edge Functions. Only scan systems you own or have explicit permission to test. Unauthorized scanning may be illegal.';

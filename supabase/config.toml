@@ -1,0 +1,2 @@
+[functions.port-scanner]
+verify_jwt = true

@@ -13,7 +13,7 @@ export default function AboutScreen() {
   const insets = useSafeAreaInsets();
 
   const features = [
-    { icon: <Shield size={18} color={colors.accentGlow} />, title: 'Educational Simulator', desc: 'Simulates port scanning with predefined data — never performs real network scanning.' },
+    { icon: <Shield size={18} color={colors.accentGlow} />, title: 'Real TCP Scanner', desc: 'Performs actual TCP connect port scanning via Supabase Edge Functions with live results.' },
     { icon: <BookOpen size={18} color={colors.accentGlow} />, title: 'Learn Networking', desc: 'Explore ports, protocols, TCP vs UDP, and common security risks interactively.' },
     { icon: <Lock size={18} color={colors.accentGlow} />, title: 'Security Awareness', desc: 'Understand attack surfaces and mitigation best practices for common ports.' },
     { icon: <Code size={18} color={colors.accentGlow} />, title: 'Modern Stack', desc: 'Built with React Native, Expo, Reanimated, and Supabase auth.' },
@@ -32,7 +32,7 @@ export default function AboutScreen() {
         <View style={styles.hero}>
           <AnimatedShield size={80} />
           <Text style={styles.appName}>Port Scanner Dashboard</Text>
-          <Text style={[styles.appTagline, { color: colors.textSecondary }]}>Educational Network Port Scanner Simulator</Text>
+          <Text style={[styles.appTagline, { color: colors.textSecondary }]}>Real TCP Port Scanner + Network Analysis</Text>
         </View>
 
         <View style={[styles.disclaimerBox, { backgroundColor: `${colors.warning}12`, borderColor: `${colors.warning}44` }]}>

@@ -119,7 +119,7 @@ export default function PortDetailScreen() {
             <Pressable onPress={() => { haptic('light'); Linking.openURL(DEVELOPER.github); }}>
               <Text style={[styles.footerLink, { color: colors.accentGlow }]}>{DEVELOPER.github}</Text>
             </Pressable>
-            <Text style={[styles.footerCopy, { color: colors.textMuted }]}>© {new Date().getFullYear()} {DEVELOPER.name}. Educational simulator only.</Text>
+            <Text style={[styles.footerCopy, { color: colors.textMuted }]}>© {new Date().getFullYear()} {DEVELOPER.name}. Real TCP port scanner.</Text>
           </View>
           {user && <Text style={[styles.signedInAs, { color: colors.textMuted }]}>Signed in as {user.email}</Text>}
         </ScrollView>

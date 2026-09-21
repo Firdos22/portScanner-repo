@@ -31,7 +31,7 @@ export default function StatsScreen() {
       <CyberBackground />
       <ScrollView contentContainerStyle={{ paddingTop: insets.top + 16, paddingBottom: insets.bottom + 24, paddingHorizontal: 20 }} showsVerticalScrollIndicator={false}>
         <Text style={styles.screenTitle}>Statistics</Text>
-        <Text style={[styles.screenSub, { color: colors.textSecondary }]}>{last ? `Target ${last.ip}` : 'Run a scan to see statistics.'}</Text>
+        <Text style={[styles.screenSub, { color: colors.textSecondary }]}>{last ? `Target ${last.host}` : 'Run a scan to see statistics.'}</Text>
 
         <View style={styles.cardsGrid}>
           {cards.map((c, i) => (
@@ -67,7 +67,7 @@ export default function StatsScreen() {
               <View style={styles.ringRow}>
                 <ProgressRing progress={(stats.open / stats.total) * 100} color={colors.success} label="Open ratio" />
                 <View style={styles.summaryList}>
-                  <SummaryItem icon={<Globe size={15} color={colors.textSecondary} />} label="Target IP" value={stats.ip} colors={colors} />
+                  <SummaryItem icon={<Globe size={15} color={colors.textSecondary} />} label="Target" value={stats.host} colors={colors} />
                   <SummaryItem icon={<Clock size={15} color={colors.textSecondary} />} label="Duration" value={formatDuration(stats.durationMs)} colors={colors} />
                   <SummaryItem icon={<Radar size={15} color={colors.textSecondary} />} label="Total Scans" value={String(progress.scanCount)} colors={colors} />
                   <SummaryItem icon={<Server size={15} color={colors.textSecondary} />} label="Ports Scanned" value={String(stats.total)} colors={colors} />
@@ -75,13 +75,9 @@ export default function StatsScreen() {
               </View>
             </Animated.View>
 
-            <Animated.View entering={settings.animationsEnabled ? FadeInDown.delay(600).springify() : undefined} style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <Text style={styles.cardTitle}>Weekly Learning</Text>
-              <BarChart data={[{ label: 'Mon', value: 2, color: colors.primary }, { label: 'Tue', value: 3, color: colors.accent }, { label: 'Wed', value: 1, color: colors.success }, { label: 'Thu', value: 4, color: colors.warning }, { label: 'Fri', value: 2, color: colors.primary }, { label: 'Sat', value: 5, color: colors.accent }, { label: 'Sun', value: 3, color: colors.success }]} width={300} height={180} />
-              <Text style={[styles.chartCaption, { color: colors.textMuted }]}>Simulated learning activity for the week.</Text>
-            </Animated.View>
           </>
         )}
+
       </ScrollView>
     </View>
   );
