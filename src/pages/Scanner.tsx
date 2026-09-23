@@ -1,13 +1,15 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Radar, Eraser, Search, X, AlertCircle, RefreshCw, CheckCircle2, Zap, Shield, Globe } from 'lucide-react';
+import { Radar, Eraser, Search, X, AlertCircle, RefreshCw, CheckCircle2, Zap, Shield, Globe, Download } from 'lucide-react';
 import { RadarSweep } from '@/components/CyberVisuals';
 import { PortCard } from '@/components/PortCard';
 import { useProgress } from '@/context/ProgressContext';
 import {
   validateHost, performRealScan, filterPorts, sortPorts, searchPorts,
-  formatDuration, type ScanResult, type ScannedPort, type ScanProgress, type FilterType,
+  formatDuration, getReportContent, getReportMimeType, getReportFileExtension,
+  downloadFile, type ReportFormat,
+  type ScanResult, type ScannedPort, type ScanProgress, type FilterType,
 } from '@/utils/scanner';
 
 const QUICK_TARGETS = [
@@ -32,6 +34,7 @@ export default function Scanner() {
   const [result, setResult] = useState<ScanResult | null>(progress.lastScan);
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<FilterType>('all');
+  const [reportFormat, setReportFormat] = useState<ReportFormat | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   const visiblePorts = useMemo(() => {
@@ -63,6 +66,15 @@ export default function Scanner() {
   const clearAll = () => { setHost(''); setError(null); setResult(null); setQuery(''); setFilter('all'); setLivePorts([]); };
   const openPort = (port: number) => { recordViewedPort(port); navigate(`/port/${port}`); };
   const progressPct = totalCount > 0 ? Math.round((scannedCount / totalCount) * 100) : 0;
+
+  const downloadFullReport = (format: ReportFormat) => {
+    if (!result) return;
+    const content = getReportContent(result, format);
+    const safeHost = result.host.replace(/[^a-zA-Z0-9]/g, '-');
+    downloadFile(content, `scan-report-${safeHost}.${getReportFileExtension(format)}`, getReportMimeType(format));
+    setReportFormat(format);
+    setTimeout(() => setReportFormat(null), 2000);
+  };
 
   return (
     <div className="space-y-5">
@@ -145,7 +157,14 @@ export default function Scanner() {
               <h2 className="text-lg font-bold text-white">Results · {result.host}</h2>
               <p className="text-xs text-slate-500 mt-0.5">{result.openCount} open · {result.closedCount} closed · {formatDuration(result.durationMs)}</p>
             </div>
-            <button onClick={handleScan} className="flex items-center gap-1.5 text-sm font-bold text-cyber-glow border border-cyber-border rounded-xl px-3.5 py-2 hover:bg-cyber-surface/30 transition-colors"><RefreshCw size={14} /> Rescan</button>
+            <div className="flex items-center gap-2">
+              {(['text', 'json', 'csv'] as ReportFormat[]).map((fmt) => (
+                <button key={fmt} onClick={() => downloadFullReport(fmt)} className={`flex items-center gap-1.5 text-xs font-bold border rounded-lg px-3 py-2 transition-all ${reportFormat === fmt ? 'border-cyber-successGlow/50 text-cyber-successGlow bg-cyber-success/10' : 'border-cyber-border text-slate-400 hover:text-white hover:border-cyber-glow/30'}`}>
+                  <Download size={13} /> {reportFormat === fmt ? 'Done' : fmt.toUpperCase()}
+                </button>
+              ))}
+              <button onClick={handleScan} className="flex items-center gap-1.5 text-sm font-bold text-cyber-glow border border-cyber-border rounded-xl px-3.5 py-2 hover:bg-cyber-surface/30 transition-colors"><RefreshCw size={14} /> Rescan</button>
+            </div>
           </div>
           <div className="flex items-center gap-3 bg-cyber-surface/50 border border-cyber-border rounded-xl px-4 py-3 mb-4">
             <Search size={16} className="text-slate-600 flex-shrink-0" />
