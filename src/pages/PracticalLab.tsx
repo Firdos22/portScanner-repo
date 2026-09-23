@@ -6,6 +6,7 @@ import {
   type NmapScanResult, type NmapFlagOption,
 } from '@/utils/nmapScanner';
 import { downloadFile } from '@/utils/scanner';
+import { supabase } from '@/lib/supabase';
 
 const QUICK_TARGETS = [
   { label: 'scanme.nmap.org', value: 'scanme.nmap.org' },
@@ -66,7 +67,17 @@ export default function PracticalLab() {
       onStart: (cmd) => { setTerminalOutput(`$ ${cmd}\n`); },
       onOutput: (chunk) => { setTerminalOutput((prev) => prev + chunk); },
       onStderr: (chunk) => { setTerminalOutput((prev) => prev + `\x1b[33m${chunk}\x1b[0m`); },
-      onComplete: (res) => { setResult(res); setScanning(false); },
+      onComplete: (res) => {
+        setResult(res);
+        setScanning(false);
+        if (res.nmapAvailable) {
+          supabase.from('nmap_scan_history').insert({
+            target: target.trim(), command: res.command, exit_code: res.exitCode,
+            duration: res.duration, nmap_available: res.nmapAvailable,
+            raw_output: res.rawOutput, hosts: res.hosts,
+          }).then(({ error: dbErr }) => { if (dbErr) console.warn('Failed to save nmap scan history:', dbErr.message); });
+        }
+      },
       onError: (msg) => { setError(msg); setScanning(false); },
       onTimeout: (msg) => { setError(msg); setScanning(false); },
     }, abortRef.current.signal);
