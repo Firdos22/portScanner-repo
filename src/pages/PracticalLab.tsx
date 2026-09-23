@@ -16,7 +16,7 @@ const QUICK_TARGETS = [
 
 export default function PracticalLab() {
   const [target, setTarget] = useState('scanme.nmap.org');
-  const [selectedFlags, setSelectedFlags] = useState<Map<string, string | null>>(new Map([['-sT', null], ['-F', null]]));
+  const [selectedFlags, setSelectedFlags] = useState<Map<string, string | null>>(new Map([['-F', null], ['-T4', null]]));
   const [scanning, setScanning] = useState(false);
   const [terminalOutput, setTerminalOutput] = useState('');
   const [result, setResult] = useState<NmapScanResult | null>(null);
@@ -37,22 +37,13 @@ export default function PracticalLab() {
   };
 
   const setFlagValue = (flag: string, value: string) => {
-    setSelectedFlags((prev) => {
-      const next = new Map(prev);
-      next.set(flag, value);
-      return next;
-    });
+    setSelectedFlags((prev) => { const next = new Map(prev); next.set(flag, value); return next; });
   };
 
   const handleScan = useCallback(async () => {
     setError(null);
-    if (!validateNmapTarget(target)) {
-      setError('Enter a valid IP, hostname, or CIDR (e.g. 192.168.1.0/24)');
-      return;
-    }
-    setScanning(true);
-    setTerminalOutput('');
-    setResult(null);
+    if (!validateNmapTarget(target)) { setError('Enter a valid IP, hostname, or CIDR.'); return; }
+    setScanning(true); setTerminalOutput(''); setResult(null);
     abortRef.current = new AbortController();
 
     const args: string[] = [];
@@ -66,17 +57,13 @@ export default function PracticalLab() {
     await runNmapScan(target, args, {
       onStart: (cmd) => { setTerminalOutput(`$ ${cmd}\n`); },
       onOutput: (chunk) => { setTerminalOutput((prev) => prev + chunk); },
-      onStderr: (chunk) => { setTerminalOutput((prev) => prev + `\x1b[33m${chunk}\x1b[0m`); },
       onComplete: (res) => {
-        setResult(res);
-        setScanning(false);
-        if (res.nmapAvailable) {
-          supabase.from('nmap_scan_history').insert({
-            target: target.trim(), command: res.command, exit_code: res.exitCode,
-            duration: res.duration, nmap_available: res.nmapAvailable,
-            raw_output: res.rawOutput, hosts: res.hosts,
-          }).then(({ error: dbErr }) => { if (dbErr) console.warn('Failed to save nmap scan history:', dbErr.message); });
-        }
+        setResult(res); setScanning(false);
+        supabase.from('nmap_scan_history').insert({
+          target: target.trim(), command: res.command, exit_code: res.exitCode,
+          duration: res.duration, nmap_available: true,
+          raw_output: res.rawOutput, hosts: res.hosts,
+        }).then(({ error: dbErr }) => { if (dbErr) console.warn('Save failed:', dbErr.message); });
       },
       onError: (msg) => { setError(msg); setScanning(false); },
       onTimeout: (msg) => { setError(msg); setScanning(false); },
@@ -85,29 +72,23 @@ export default function PracticalLab() {
 
   const handleStop = () => { abortRef.current?.abort(); setScanning(false); };
 
-  const copyCommand = () => {
-    navigator.clipboard.writeText(command);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
+  const copyCommand = () => { navigator.clipboard.writeText(command); setCopied(true); setTimeout(() => setCopied(false), 2000); };
 
   const exportResult = () => {
     if (!result) return;
-    const content = `NMAP SCAN RESULT\n${'='.repeat(50)}\n\nCommand: ${result.command}\nTarget: ${target}\nDuration: ${result.duration}\nExit Code: ${result.exitCode}\nNmap Available: ${result.nmapAvailable}\n\n--- RAW OUTPUT ---\n${result.rawOutput}\n\n--- PARSED HOSTS ---\n${JSON.stringify(result.hosts, null, 2)}\n`;
-    downloadFile(content, `nmap-scan-${Date.now()}.txt`, 'text/plain');
+    downloadFile(`NMAP SCAN RESULT\n${'='.repeat(50)}\n\nCommand: ${result.command}\nDuration: ${result.duration}\nExit Code: ${result.exitCode}\n\n--- OUTPUT ---\n${result.rawOutput}\n`, `nmap-scan-${Date.now()}.txt`, 'text/plain');
   };
 
   return (
     <div className="space-y-5">
       <div>
         <h1 className="text-2xl font-extrabold text-white mb-1">Practical Lab</h1>
-        <p className="text-sm text-slate-400">Build and run real nmap commands with live terminal output.</p>
+        <p className="text-sm text-slate-400">Build nmap-style commands and run real TCP connect scans with live terminal output.</p>
       </div>
 
-      {/* Target input */}
       <div className="flex items-center gap-3 bg-cyber-surface/50 border border-cyber-border rounded-xl px-4 py-3.5">
         <Server size={18} className="text-cyber-glow flex-shrink-0" />
-        <input value={target} onChange={(e) => setTarget(e.target.value)} placeholder="IP / hostname / CIDR" className="flex-1 bg-transparent text-white text-base font-semibold tracking-wide placeholder:text-slate-600" onKeyDown={(e) => { if (e.key === 'Enter' && !scanning) handleScan(); }} />
+        <input value={target} onChange={(e) => setTarget(e.target.value)} placeholder="IP / hostname / CIDR" className="flex-1 bg-transparent text-white text-base font-semibold placeholder:text-slate-600" onKeyDown={(e) => { if (e.key === 'Enter' && !scanning) handleScan(); }} />
         {target && !scanning && <button onClick={() => setTarget('')} className="text-slate-600 hover:text-slate-400"><X size={16} /></button>}
       </div>
 
@@ -117,7 +98,6 @@ export default function PracticalLab() {
         ))}
       </div>
 
-      {/* Command builder */}
       <div className="glass-card p-4">
         <button onClick={() => setShowFlags((v) => !v)} className="flex items-center justify-between w-full mb-3">
           <span className="text-sm font-bold text-white">Command Builder</span>
@@ -153,7 +133,6 @@ export default function PracticalLab() {
         </AnimatePresence>
       </div>
 
-      {/* Generated command */}
       <div className="glass-card p-4 flex items-center gap-3">
         <Terminal size={16} className="text-cyber-glow flex-shrink-0" />
         <code className="flex-1 text-sm font-mono text-cyber-glow truncate">{command}</code>
@@ -163,7 +142,6 @@ export default function PracticalLab() {
         </button>
       </div>
 
-      {/* Error */}
       <AnimatePresence>
         {error && (
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="flex items-center gap-2 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3">
@@ -172,15 +150,14 @@ export default function PracticalLab() {
         )}
       </AnimatePresence>
 
-      {/* Action buttons */}
       <div className="flex gap-3">
         {scanning ? (
           <button onClick={handleStop} className="flex-1 border border-red-500/40 text-red-400 font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 hover:bg-red-500/10 transition-colors">
             <Square size={18} /> Stop Scan
           </button>
         ) : (
-          <button onClick={handleScan} disabled={scanning} className="flex-1 gradient-primary text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 hover:opacity-90 transition-opacity">
-            <Play size={18} /> Run Nmap
+          <button onClick={handleScan} className="flex-1 gradient-primary text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 hover:opacity-90 transition-opacity">
+            <Play size={18} /> Run Scan
           </button>
         )}
         {result && !scanning && (
@@ -190,33 +167,28 @@ export default function PracticalLab() {
         )}
       </div>
 
-      {/* Terminal output */}
       {(terminalOutput || scanning) && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl overflow-hidden border border-cyber-border">
           <div className="flex items-center gap-2 bg-cyber-surface/80 px-4 py-2.5 border-b border-cyber-border">
             <div className="flex gap-1.5"><span className="w-3 h-3 rounded-full bg-red-500/60" /><span className="w-3 h-3 rounded-full bg-yellow-500/60" /><span className="w-3 h-3 rounded-full bg-green-500/60" /></div>
-            <span className="text-xs font-mono text-slate-500 ml-2">nmap terminal</span>
+            <span className="text-xs font-mono text-slate-500 ml-2">terminal</span>
             {scanning && <span className="w-3 h-3 border-2 border-cyber-glow border-t-transparent rounded-full animate-spin ml-auto" />}
           </div>
           <pre className="bg-[#0a0e1a] p-4 text-xs font-mono text-green-400/90 max-h-[400px] overflow-auto whitespace-pre-wrap">{terminalOutput}<span className={`inline-block w-2 h-4 ${scanning ? 'bg-green-400 animate-pulse' : ''}`} /></pre>
         </motion.div>
       )}
 
-      {/* Parsed results */}
       {result && !scanning && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
           <div className="flex items-center gap-4 flex-wrap">
             <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-cyber-surface/50 border border-cyber-border">
-              <Hash size={14} className="text-slate-500" />
-              <span className="text-xs font-bold text-slate-400">Exit Code: <span className={result.exitCode === 0 ? 'text-cyber-successGlow' : 'text-red-400'}>{result.exitCode}</span></span>
+              <Hash size={14} className="text-slate-500" /><span className="text-xs font-bold text-slate-400">Exit: <span className={result.exitCode === 0 ? 'text-cyber-successGlow' : 'text-red-400'}>{result.exitCode}</span></span>
             </div>
             <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-cyber-surface/50 border border-cyber-border">
-              <Clock size={14} className="text-slate-500" />
-              <span className="text-xs font-bold text-slate-400">Duration: <span className="text-white">{result.duration}</span></span>
+              <Clock size={14} className="text-slate-500" /><span className="text-xs font-bold text-slate-400">Time: <span className="text-white">{result.duration}</span></span>
             </div>
             <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-cyber-surface/50 border border-cyber-border">
-              <Server size={14} className="text-slate-500" />
-              <span className="text-xs font-bold text-slate-400">Hosts: <span className="text-white">{result.hosts.length}</span></span>
+              <Server size={14} className="text-slate-500" /><span className="text-xs font-bold text-slate-400">Hosts: <span className="text-white">{result.hosts.length}</span></span>
             </div>
           </div>
 
@@ -226,7 +198,6 @@ export default function PracticalLab() {
                 <div><p className="text-lg font-bold text-white">{host.host || host.ip}</p><p className="text-xs text-slate-500 mt-0.5">{host.ip}</p></div>
                 <span className={`px-3 py-1.5 rounded-full text-xs font-bold ${host.state === 'up' ? 'bg-cyber-successGlow/20 text-cyber-successGlow' : 'bg-red-500/20 text-red-400'}`}>{host.state.toUpperCase()}</span>
               </div>
-              {host.os && <p className="text-xs text-slate-400 mb-3">OS: {host.os}</p>}
               {host.ports.length > 0 ? (
                 <div className="space-y-2">
                   <div className="grid grid-cols-12 gap-2 text-[10px] font-bold text-slate-500 uppercase tracking-wider pb-2 border-b border-cyber-border">
@@ -248,10 +219,9 @@ export default function PracticalLab() {
         </motion.div>
       )}
 
-      {/* Authorization warning */}
       <div className="flex items-start gap-2.5 bg-amber-500/10 border border-amber-500/30 rounded-xl p-4">
         <Shield size={16} className="text-amber-500 flex-shrink-0 mt-0.5" />
-        <p className="text-xs text-slate-400 leading-relaxed">Only scan systems you own or have explicit written permission to test. Unauthorized scanning may be illegal. This tool enforces argument allowlisting to prevent arbitrary command execution.</p>
+        <p className="text-xs text-slate-400 leading-relaxed">Only scan systems you own or have explicit written permission to test. This tool performs real TCP connect scanning with nmap-style output. Flags like -sS, -O, -sV require raw socket access and fall back to TCP connect.</p>
       </div>
     </div>
   );

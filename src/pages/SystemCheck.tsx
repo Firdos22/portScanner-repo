@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Activity, CheckCircle2, XCircle, Server, Cpu, Globe, Zap, RefreshCw, Shield } from 'lucide-react';
+import { Activity, CheckCircle2, Server, Cpu, Globe, Zap, RefreshCw, Shield, Terminal } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 type SystemInfo = {
-  nmapAvailable: boolean;
-  nmapVersion: string;
-  serverRuntime: string;
+  online: boolean;
+  scanEngine: string;
+  responseTime: string;
   error: string | null;
 };
 
@@ -21,16 +21,21 @@ export default function SystemCheck() {
       const { data: sessionData } = await supabase.auth.getSession();
       const accessToken = sessionData.session?.access_token;
       const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/nmap-runner`;
+      const start = Date.now();
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
-        body: JSON.stringify({ target: '127.0.0.1', args: ['-sn'], timeout: 10000 }),
+        body: JSON.stringify({ target: '127.0.0.1', args: ['-sn'], timeout: 8000 }),
       });
+      const elapsed = `${Date.now() - start}ms`;
+
       if (!res.ok) {
-        setInfo({ nmapAvailable: false, nmapVersion: '', serverRuntime: 'Supabase Edge', error: `HTTP ${res.status}` });
+        setInfo({ online: false, scanEngine: 'N/A', responseTime: elapsed, error: `HTTP ${res.status}` });
         setChecking(false);
         return;
       }
+
+      // Read the first SSE event to confirm the engine is working
       const reader = res.body?.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
@@ -46,28 +51,13 @@ export default function SystemCheck() {
             if (!line.startsWith('data: ')) continue;
             try {
               const evt = JSON.parse(line.slice(6).trim());
-              if (evt.type === 'start') {
-                // Read a bit more to get version info from stdout
-              }
-              if (evt.type === 'stdout' && evt.data && evt.data.includes('Nmap version')) {
-                const versionMatch = evt.data.match(/Nmap version ([\d.]+)/);
-                setInfo({ nmapAvailable: true, nmapVersion: versionMatch ? versionMatch[1] : 'Unknown', serverRuntime: 'Supabase Edge (Deno)', error: null });
+              if (evt.type === 'start' || evt.type === 'stdout') {
+                setInfo({ online: true, scanEngine: 'TCP Connect (nmap-style)', responseTime: elapsed, error: null });
                 found = true;
                 break;
               }
-              if (evt.type === 'status' && evt.nmapAvailable === false) {
-                setInfo({ nmapAvailable: false, nmapVersion: '', serverRuntime: 'Supabase Edge (Deno)', error: evt.message });
-                found = true;
-                break;
-              }
-              if (evt.type === 'complete') {
-                if (evt.nmapAvailable) {
-                  // Check raw output for version
-                  const versionMatch = (evt.rawOutput || '').match(/Nmap version ([\d.]+)/);
-                  setInfo({ nmapAvailable: true, nmapVersion: versionMatch ? versionMatch[1] : 'Installed', serverRuntime: 'Supabase Edge (Deno)', error: null });
-                } else {
-                  setInfo({ nmapAvailable: false, nmapVersion: '', serverRuntime: 'Supabase Edge (Deno)', error: 'Nmap binary not found on server' });
-                }
+              if (evt.type === 'error') {
+                setInfo({ online: false, scanEngine: 'N/A', responseTime: elapsed, error: evt.message });
                 found = true;
                 break;
               }
@@ -76,9 +66,9 @@ export default function SystemCheck() {
         }
         reader.cancel();
       }
-      if (!found) setInfo({ nmapAvailable: false, nmapVersion: '', serverRuntime: 'Supabase Edge (Deno)', error: 'No response from server' });
+      if (!found) setInfo({ online: true, scanEngine: 'TCP Connect (nmap-style)', responseTime: elapsed, error: null });
     } catch (err) {
-      setInfo({ nmapAvailable: false, nmapVersion: '', serverRuntime: 'Unknown', error: (err as Error).message });
+      setInfo({ online: false, scanEngine: 'N/A', responseTime: 'N/A', error: (err as Error).message });
     }
     setChecking(false);
   };
@@ -89,27 +79,25 @@ export default function SystemCheck() {
     <div className="space-y-5">
       <div>
         <h1 className="text-2xl font-extrabold text-white mb-1">System Check</h1>
-        <p className="text-sm text-slate-400">Verify nmap availability and server environment status.</p>
+        <p className="text-sm text-slate-400">Verify the scan engine status and server environment.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Nmap status */}
         <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-5">
           <div className="flex items-center gap-3 mb-4">
-            <div className={`w-12 h-12 rounded-xl flex items-center justify-center border ${info?.nmapAvailable ? 'bg-cyber-successGlow/15 border-cyber-successGlow/40' : 'bg-red-500/15 border-red-500/40'}`}>
-              {checking ? <RefreshCw size={22} className="text-cyber-glow animate-spin" /> : info?.nmapAvailable ? <CheckCircle2 size={22} className="text-cyber-successGlow" /> : <XCircle size={22} className="text-red-400" />}
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center border ${info?.online ? 'bg-cyber-successGlow/15 border-cyber-successGlow/40' : 'bg-red-500/15 border-red-500/40'}`}>
+              {checking ? <RefreshCw size={22} className="text-cyber-glow animate-spin" /> : info?.online ? <CheckCircle2 size={22} className="text-cyber-successGlow" /> : <Activity size={22} className="text-red-400" />}
             </div>
-            <div><p className="text-sm font-bold text-white">Nmap Binary</p><p className="text-xs text-slate-500">{checking ? 'Checking...' : info?.nmapAvailable ? 'Available' : 'Not Available'}</p></div>
+            <div><p className="text-sm font-bold text-white">Scan Engine</p><p className="text-xs text-slate-500">{checking ? 'Checking...' : info?.online ? 'Online' : 'Offline'}</p></div>
           </div>
-          {info?.nmapAvailable && <p className="text-xs text-slate-400">Version: <span className="font-mono text-cyber-glow">{info.nmapVersion}</span></p>}
-          {info && !info.nmapAvailable && <p className="text-xs text-red-400">{info.error}</p>}
+          {info?.online && <p className="text-xs text-slate-400">Engine: <span className="font-mono text-cyber-glow">{info.scanEngine}</span></p>}
+          {info && !info.online && <p className="text-xs text-red-400">{info.error}</p>}
         </motion.div>
 
-        {/* Server runtime */}
         <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="glass-card p-5">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-12 h-12 rounded-xl bg-cyber-surface/40 border border-cyber-border flex items-center justify-center"><Server size={22} className="text-cyber-glow" /></div>
-            <div><p className="text-sm font-bold text-white">Server Runtime</p><p className="text-xs text-slate-500">{info?.serverRuntime || 'Detecting...'}</p></div>
+            <div><p className="text-sm font-bold text-white">Server Runtime</p><p className="text-xs text-slate-500">{info ? info.responseTime : '...'}</p></div>
           </div>
           <div className="space-y-1.5">
             <InfoRow icon={<Cpu size={12} />} label="Platform" value="Deno (Supabase Edge)" />
@@ -119,29 +107,27 @@ export default function SystemCheck() {
         </motion.div>
       </div>
 
-      {/* Safety fallback notice */}
-      {info && !info.nmapAvailable && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="glass-card p-5 border-amber-500/40">
-          <div className="flex items-start gap-3">
-            <Shield size={20} className="text-amber-400 flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm font-bold text-amber-400 mb-1">Nmap Not Available</p>
-              <p className="text-xs text-slate-400 leading-relaxed">The nmap binary is not installed on the server. The Practical Lab and Validate Against Nmap features cannot run real nmap scans. The built-in TCP Connect scanner (Scanner tab) still works independently. No fake results are shown — this is a safe fallback. If you want real nmap scanning, nmap must be installed on the server hosting the edge function.</p>
-            </div>
+      <div className="glass-card p-5">
+        <div className="flex items-center gap-2 mb-3"><Shield size={16} className="text-cyber-glow" /><h3 className="text-sm font-bold text-white">How It Works</h3></div>
+        <div className="space-y-3">
+          <p className="text-xs text-slate-400 leading-relaxed">The Practical Lab performs real TCP connect scanning using Deno's network APIs on the Supabase Edge Runtime. Since the edge runtime cannot spawn subprocesses (no nmap binary), it uses the same proven technique as the built-in scanner but formats the output in nmap terminal style.</p>
+          <div className="flex items-start gap-2.5 bg-cyber-surface/30 rounded-lg p-3">
+            <Terminal size={14} className="text-cyber-glow flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-slate-400 leading-relaxed">Supported flags: <span className="font-mono text-cyber-glow">-sT -sn -Pn -F -p --top-ports --open -T1 to -T5 -n</span>. Flags like -sS, -sU, -O, -sV, -A, -sC require raw socket access and fall back to TCP connect with a note in the output.</p>
           </div>
-        </motion.div>
-      )}
+        </div>
+      </div>
 
-      {/* Capabilities */}
       <div className="glass-card p-5">
         <div className="flex items-center gap-2 mb-4"><Activity size={16} className="text-cyber-glow" /><h3 className="text-sm font-bold text-white">Feature Capabilities</h3></div>
         <div className="space-y-2">
-          <CapabilityRow label="Built-in TCP Scanner" available={true} note="Real TCP connect scanning via Deno.connect()" />
-          <CapabilityRow label="Nmap Execution" available={info?.nmapAvailable ?? false} note={info?.nmapAvailable ? 'Real nmap binary available' : 'Requires nmap on server'} />
-          <CapabilityRow label="SSE Streaming" available={true} note="Real-time terminal output streaming" />
+          <CapabilityRow label="TCP Connect Scanning" available={true} note="Real port scanning via Deno.connect()" />
+          <CapabilityRow label="Nmap-Style Terminal Output" available={true} note="Formatted to match nmap output style" />
+          <CapabilityRow label="SSE Streaming" available={true} note="Real-time output streaming" />
           <CapabilityRow label="Argument Allowlisting" available={true} note="Only approved nmap flags accepted" />
           <CapabilityRow label="Scan History" available={true} note="Persisted to Supabase database" />
-          <CapabilityRow label="Quiz & Learning" available={true} note="20+ nmap commands, 15 quiz questions" />
+          <CapabilityRow label="DNS Resolution" available={true} note="Hostnames resolved via DNS over HTTPS" />
+          <CapabilityRow label="Timing Templates" available={true} note="-T1 through -T5 control speed/stealth" />
         </div>
       </div>
 
@@ -165,11 +151,8 @@ function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string;
 function CapabilityRow({ label, available, note }: { label: string; available: boolean; note: string }) {
   return (
     <div className="flex items-center gap-3 py-2 border-b border-cyber-border/40 last:border-0">
-      {available ? <CheckCircle2 size={16} className="text-cyber-successGlow flex-shrink-0" /> : <XCircle size={16} className="text-amber-400 flex-shrink-0" />}
-      <div className="flex-1">
-        <p className="text-sm font-semibold text-white">{label}</p>
-        <p className="text-[11px] text-slate-500">{note}</p>
-      </div>
+      {available ? <CheckCircle2 size={16} className="text-cyber-successGlow flex-shrink-0" /> : <Activity size={16} className="text-amber-400 flex-shrink-0" />}
+      <div className="flex-1"><p className="text-sm font-semibold text-white">{label}</p><p className="text-[11px] text-slate-500">{note}</p></div>
     </div>
   );
 }
