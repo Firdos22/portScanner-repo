@@ -18,10 +18,7 @@ import Reports from '@/pages/Reports';
 import About from '@/pages/About';
 import PracticalLab from '@/pages/PracticalLab';
 import LearnNmap from '@/pages/LearnNmap';
-import CommandExplorer from '@/pages/CommandExplorer';
 import ScanHistory from '@/pages/ScanHistory';
-import ValidateNmap from '@/pages/ValidateNmap';
-import NmapQuiz from '@/pages/NmapQuiz';
 import SystemCheck from '@/pages/SystemCheck';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -49,10 +46,7 @@ export default function App() {
           <Route path="scanner" element={<Scanner />} />
           <Route path="practical-lab" element={<PracticalLab />} />
           <Route path="learn-nmap" element={<LearnNmap />} />
-          <Route path="command-explorer" element={<CommandExplorer />} />
           <Route path="scan-history" element={<ScanHistory />} />
-          <Route path="validate" element={<ValidateNmap />} />
-          <Route path="nmap-quiz" element={<NmapQuiz />} />
           <Route path="system-check" element={<SystemCheck />} />
           <Route path="stats" element={<Stats />} />
           <Route path="learn" element={<Learn />} />

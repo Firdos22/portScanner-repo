@@ -248,32 +248,3 @@ export const NMAP_COMMANDS: NmapCommand[] = [
     category: 'Port Selection',
   },
 ];
-
-// ── Nmap Quiz Questions ──
-
-export type NmapQuizQuestion = {
-  id: string;
-  question: string;
-  options: string[];
-  correctIndex: number;
-  explanation: string;
-  difficulty: NmapDifficulty;
-};
-
-export const NMAP_QUIZ: NmapQuizQuestion[] = [
-  { id: 'nq1', question: 'What does the -sS flag do in nmap?', options: ['TCP connect scan', 'SYN stealth scan', 'UDP scan', 'Ping scan'], correctIndex: 1, explanation: '-sS performs a SYN stealth (half-open) scan by sending SYN packets without completing the TCP handshake.', difficulty: 'intermediate' },
-  { id: 'nq2', question: 'Which flag makes nmap scan only the top 100 ports?', options: ['-F', '--top-ports 100', '-p 100', '-T4'], correctIndex: 0, explanation: '-F enables fast mode, scanning only the top 100 most common ports instead of the default 1000.', difficulty: 'beginner' },
-  { id: 'nq3', question: 'What does -Pn do?', options: ['Enables ping scanning', 'Skips host discovery', 'Scans UDP ports', 'Enables version detection'], correctIndex: 1, explanation: '-Pn skips the ping/host discovery phase and treats all targets as online, useful for firewalled hosts.', difficulty: 'beginner' },
-  { id: 'nq4', question: 'Which scan requires root/sudo privileges?', options: ['-sT (TCP connect)', '-sS (SYN scan)', '-sV (Version detection)', '-F (Fast scan)'], correctIndex: 1, explanation: '-sS (SYN scan) requires root because it needs raw socket access to send SYN packets without completing the handshake.', difficulty: 'intermediate' },
-  { id: 'nq5', question: 'What does -A enable?', options: ['Only OS detection', 'Only version detection', 'OS detection + version + scripts + traceroute', 'Only fast scanning'], correctIndex: 2, explanation: '-A is aggressive mode, equivalent to -sV -O -sC --traceroute combined.', difficulty: 'intermediate' },
-  { id: 'nq6', question: 'Which timing template is recommended for most scans?', options: ['-T1', '-T2', '-T3', '-T4'], correctIndex: 3, explanation: '-T4 (Aggressive) is recommended for most networks — fast and reliable. -T3 is the default.', difficulty: 'intermediate' },
-  { id: 'nq7', question: 'What does --script vuln do?', options: ['Scans for viruses', 'Runs vulnerability detection NSE scripts', 'Scans UDP ports for vulnerabilities', 'Performs a fast vulnerability scan'], correctIndex: 1, explanation: '--script vuln runs all NSE scripts in the vuln category to check for known vulnerabilities like EternalBlue or Heartbleed.', difficulty: 'advanced' },
-  { id: 'nq8', question: 'How do you scan all 65535 ports?', options: ['-p all', '-F', '-p-', '--top-ports 65535'], correctIndex: 2, explanation: '-p- tells nmap to scan all 65535 TCP ports. This is the most thorough but slowest port selection option.', difficulty: 'beginner' },
-  { id: 'nq9', question: 'What does -sU scan for?', options: ['UDP ports', 'URL paths', 'Underlying services', 'Unencrypted traffic'], correctIndex: 0, explanation: '-sU performs a UDP port scan, useful for finding UDP services like DNS (53), SNMP (161), and DHCP (67/68).', difficulty: 'intermediate' },
-  { id: 'nq10', question: 'What is the -D flag used for?', options: ['Delay between probes', 'Decoy IP addresses', 'Debug output', 'DNS resolution'], correctIndex: 1, explanation: '-D specifies decoy IP addresses, making the scan appear to come from multiple sources to hide the real scanner.', difficulty: 'advanced' },
-  { id: 'nq11', question: 'Which flag detects the operating system of the target?', options: ['-sV', '-O', '--osscan', '-A'], correctIndex: 1, explanation: '-O enables OS detection by analyzing TCP/IP stack fingerprinting responses. -A also includes -O.', difficulty: 'intermediate' },
-  { id: 'nq12', question: 'What does -sC do?', options: ['Custom scan', 'Runs default NSE scripts', 'TCP connect scan', 'Continuous scan'], correctIndex: 1, explanation: '-sC runs the default set of Nmap Scripting Engine (NSE) scripts for service enumeration and information gathering.', difficulty: 'advanced' },
-  { id: 'nq13', question: 'Which flag is best for evading IDS detection?', options: ['-T5', '-T1', '-F', '-Pn'], correctIndex: 1, explanation: '-T1 (Sneaky) sends packets very slowly with long delays, making it harder for IDS to detect the scan pattern.', difficulty: 'advanced' },
-  { id: 'nq14', question: 'What does --version-intensity control?', options: ['Scan speed', 'How aggressively nmap probes for service versions (0-9)', 'Number of ports scanned', 'OS detection accuracy'], correctIndex: 1, explanation: '--version-intensity (0-9, default 7) controls how many probes nmap sends to each port to determine the service version. Higher = more accurate but slower.', difficulty: 'advanced' },
-  { id: 'nq15', question: 'Which command discovers live hosts without scanning ports?', options: ['nmap -F <target>', 'nmap -sn <target>', 'nmap -Pn <target>', 'nmap -sS <target>'], correctIndex: 1, explanation: '-sn performs a ping scan only — it discovers which hosts are up without scanning any ports.', difficulty: 'beginner' },
-];

@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { Home, Radar, BarChart3, GraduationCap, Trophy, Settings as SettingsIcon, LogOut, Terminal, BookOpen, Search, History, GitCompare, Brain, Activity } from 'lucide-react';
+import { Home, Radar, BarChart3, GraduationCap, Trophy, Settings as SettingsIcon, LogOut, Terminal, BookOpen, History, Activity } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { CyberBackground } from '@/components/CyberVisuals';
 
@@ -8,11 +8,8 @@ const TABS = [
   { to: '/scanner', icon: Radar, label: 'Scanner' },
   { to: '/practical-lab', icon: Terminal, label: 'Practical Lab' },
   { to: '/learn-nmap', icon: BookOpen, label: 'Learn Nmap' },
-  { to: '/command-explorer', icon: Search, label: 'Commands' },
-  { to: '/scan-history', icon: History, label: 'History' },
-  { to: '/validate', icon: GitCompare, label: 'Validate' },
-  { to: '/nmap-quiz', icon: Brain, label: 'Quiz' },
-  { to: '/system-check', icon: Activity, label: 'System' },
+  { to: '/scan-history', icon: History, label: 'Scan History' },
+  { to: '/system-check', icon: Activity, label: 'System Check' },
   { to: '/stats', icon: BarChart3, label: 'Stats' },
   { to: '/learn', icon: GraduationCap, label: 'Learn' },
   { to: '/achievements', icon: Trophy, label: 'Awards' },
@@ -53,7 +50,7 @@ export default function DashboardLayout() {
           <div className="p-4 md:p-8 max-w-5xl mx-auto"><Outlet /></div>
         </main>
         <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-cyber-bg/90 backdrop-blur-md border-t border-cyber-border flex items-center justify-around py-2 overflow-x-auto">
-          {TABS.slice(0, 8).map((tab) => (
+          {TABS.slice(0, 7).map((tab) => (
             <NavLink key={tab.to} to={tab.to} end={tab.end} className={({ isActive }) => `flex flex-col items-center gap-1 px-2 py-1 rounded-lg transition-colors flex-shrink-0 ${isActive ? 'text-cyber-glow' : 'text-slate-500'}`}>
               <tab.icon size={18} /><span className="text-[9px] font-semibold">{tab.label}</span>
             </NavLink>
