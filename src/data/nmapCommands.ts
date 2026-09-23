@@ -1,0 +1,279 @@
+export type NmapDifficulty = 'beginner' | 'intermediate' | 'advanced';
+
+export type NmapCommand = {
+  id: string;
+  name: string;
+  syntax: string;
+  description: string;
+  whenToUse: string;
+  example: string;
+  expectedOutput: string;
+  options: string[];
+  difficulty: NmapDifficulty;
+  category: string;
+};
+
+export const NMAP_COMMANDS: NmapCommand[] = [
+  // ── Beginner ──
+  {
+    id: 'basic-scan',
+    name: 'Basic Scan',
+    syntax: 'nmap <target>',
+    description: 'Scans the 1000 most common TCP ports on the target host using a TCP connect scan.',
+    whenToUse: 'When you want a quick overview of common open ports on a single host.',
+    example: 'nmap scanme.nmap.org',
+    expectedOutput: 'Nmap scan report for scanme.nmap.org (45.33.32.156)\nHost is up (0.15s latency).\nNot shown: 992 closed ports\nPORT     STATE    SERVICE\n22/tcp   open     ssh\n80/tcp   open     http',
+    options: ['No flags required', 'Scans top 1000 ports by default'],
+    difficulty: 'beginner',
+    category: 'Discovery',
+  },
+  {
+    id: 'quick-scan',
+    name: 'Quick Scan (-F)',
+    syntax: 'nmap -F <target>',
+    description: 'Scans only the top 100 most common ports instead of the default 1000, making it much faster.',
+    whenToUse: 'When you need a fast scan and only care about the most common ports.',
+    example: 'nmap -F 192.168.1.1',
+    expectedOutput: 'Nmap scan report for 192.168.1.1\nHost is up (0.0010s latency).\nPORT     STATE SERVICE\n22/tcp   open  ssh\n80/tcp   open  http\n443/tcp  open  https',
+    options: ['-F: Fast scan (top 100 ports)'],
+    difficulty: 'beginner',
+    category: 'Discovery',
+  },
+  {
+    id: 'ping-scan',
+    name: 'Ping Scan (-sn)',
+    syntax: 'nmap -sn <target>',
+    description: 'Performs host discovery only — no port scanning. Lists which hosts are up in a network range.',
+    whenToUse: 'When you want to discover live hosts on a subnet without scanning ports.',
+    example: 'nmap -sn 192.168.1.0/24',
+    expectedOutput: 'Nmap scan report for 192.168.1.1\nHost is up (0.0010s latency).\nNmap scan report for 192.168.1.5\nHost is up (0.0020s latency).\nNmap done: 256 IP addresses (2 hosts up) scanned in 2.5s',
+    options: ['-sn: Ping scan only (no port scan)'],
+    difficulty: 'beginner',
+    category: 'Discovery',
+  },
+  {
+    id: 'specific-ports',
+    name: 'Scan Specific Ports (-p)',
+    syntax: 'nmap -p <ports> <target>',
+    description: 'Scans only the ports you specify. Accepts single ports, ranges, and comma-separated lists.',
+    whenToUse: 'When you only need to check specific ports like 22, 80, 443.',
+    example: 'nmap -p 22,80,443 192.168.1.1',
+    expectedOutput: 'Nmap scan report for 192.168.1.1\nPORT     STATE SERVICE\n22/tcp   open  ssh\n80/tcp   open  http\n443/tcp  open  https',
+    options: ['-p 22: Single port', '-p 1-1000: Port range', '-p 22,80,443: Multiple ports', '-p-: All 65535 ports'],
+    difficulty: 'beginner',
+    category: 'Port Selection',
+  },
+  {
+    id: 'top-ports',
+    name: 'Top N Ports (--top-ports)',
+    syntax: 'nmap --top-ports <N> <target>',
+    description: 'Scans the N most commonly open ports based on nmap\'s frequency database.',
+    whenToUse: 'When you want to scan more than the fast 100 but fewer than the default 1000.',
+    example: 'nmap --top-ports 20 192.168.1.1',
+    expectedOutput: 'Nmap scan report for 192.168.1.1\nPORT     STATE SERVICE\n22/tcp   open  ssh\n80/tcp   open  http\n443/tcp  open  https\nNmap done: 1 IP address (1 host up) scanned in 0.5s',
+    options: ['--top-ports 20: Scan top 20 ports', '--top-ports 100: Scan top 100 ports'],
+    difficulty: 'beginner',
+    category: 'Port Selection',
+  },
+  {
+    id: 'no-ping',
+    name: 'Skip Ping (-Pn)',
+    syntax: 'nmap -Pn <target>',
+    description: 'Skips host discovery and treats all targets as online. Scans ports directly even if the host doesn\'t respond to ping.',
+    whenToUse: 'When a host blocks ICMP/ping but you know it\'s up — without -Pn nmap would skip it.',
+    example: 'nmap -Pn 192.168.1.50',
+    expectedOutput: 'Nmap scan report for 192.168.1.50\nHost is up.\nPORT     STATE    SERVICE\n80/tcp   open     http\n443/tcp  filtered https',
+    options: ['-Pn: Skip host discovery', 'Useful against firewalled hosts'],
+    difficulty: 'beginner',
+    category: 'Host Discovery',
+  },
+
+  // ── Intermediate ──
+  {
+    id: 'syn-scan',
+    name: 'SYN Stealth Scan (-sS)',
+    syntax: 'nmap -sS <target>',
+    description: 'Sends SYN packets and waits for responses. Half-open scanning — doesn\'t complete the TCP handshake, making it stealthier and faster.',
+    whenToUse: 'When you need a stealthy, fast scan and have root/sudo privileges. This is nmap\'s default when run as root.',
+    example: 'sudo nmap -sS 192.168.1.1',
+    expectedOutput: 'Nmap scan report for 192.168.1.1\nHost is up (0.0010s latency).\nPORT     STATE SERVICE\n22/tcp   open  ssh\n80/tcp   open  http',
+    options: ['-sS: SYN stealth scan', 'Requires root/sudo', 'Default when run as root', 'Less likely to be logged'],
+    difficulty: 'intermediate',
+    category: 'Scan Techniques',
+  },
+  {
+    id: 'tcp-connect',
+    name: 'TCP Connect Scan (-sT)',
+    syntax: 'nmap -sT <target>',
+    description: 'Completes the full TCP three-way handshake for each port. Slower than SYN scan but doesn\'t require root privileges.',
+    whenToUse: 'When you don\'t have root/sudo access and need to scan TCP ports.',
+    example: 'nmap -sT 192.168.1.1',
+    expectedOutput: 'Nmap scan report for 192.168.1.1\nPORT     STATE SERVICE\n22/tcp   open  ssh\n80/tcp   open  http',
+    options: ['-sT: TCP connect scan', 'No root required', 'Default for non-root users', 'More detectable than SYN'],
+    difficulty: 'intermediate',
+    category: 'Scan Techniques',
+  },
+  {
+    id: 'udp-scan',
+    name: 'UDP Scan (-sU)',
+    syntax: 'nmap -sU <target>',
+    description: 'Scans UDP ports instead of TCP. UDP scanning is slower because the protocol is connectionless and responses can be unreliable.',
+    whenToUse: 'When you need to find UDP services like DNS (53), SNMP (161), or DHCP (67/68).',
+    example: 'sudo nmap -sU 192.168.1.1',
+    expectedOutput: 'Nmap scan report for 192.168.1.1\nPORT     STATE         SERVICE\n53/udp   open          domain\n67/udp   open|filtered dhcps',
+    options: ['-sU: UDP scan', 'Requires root/sudo', 'Slower than TCP scans', 'open|filtered is common for UDP'],
+    difficulty: 'intermediate',
+    category: 'Scan Techniques',
+  },
+  {
+    id: 'version-detection',
+    name: 'Service Version Detection (-sV)',
+    syntax: 'nmap -sV <target>',
+    description: 'Probes open ports to determine the service and version running on each. Crucial for vulnerability assessment.',
+    whenToUse: 'When you need to know not just which ports are open, but what software version is running.',
+    example: 'nmap -sV 192.168.1.1',
+    expectedOutput: 'Nmap scan report for 192.168.1.1\nPORT     STATE SERVICE VERSION\n22/tcp   open  ssh     OpenSSH 8.9p1 Ubuntu 3ubuntu0.1\n80/tcp   open  http    nginx 1.18.0',
+    options: ['-sV: Version detection', '--version-intensity 0-9: Probe intensity (default 7)', 'Slower than basic scan'],
+    difficulty: 'intermediate',
+    category: 'Service Detection',
+  },
+  {
+    id: 'os-detection',
+    name: 'OS Detection (-O)',
+    syntax: 'nmap -O <target>',
+    description: 'Attempts to determine the operating system of the target by analyzing TCP/IP stack responses.',
+    whenToUse: 'When you need to identify what OS a remote host is running for vulnerability matching.',
+    example: 'sudo nmap -O 192.168.1.1',
+    expectedOutput: 'Nmap scan report for 192.168.1.1\nPORT     STATE SERVICE\n22/tcp   open  ssh\nDevice type: general purpose\nRunning: Linux 5.X\nOS CPE: cpe:/o:linux:linux_kernel:5\nOS details: Linux 5.4 - 5.15',
+    options: ['-O: OS detection', 'Requires root/sudo', 'Needs at least 1 open and 1 closed port', 'Best with -sS'],
+    difficulty: 'intermediate',
+    category: 'OS Detection',
+  },
+  {
+    id: 'aggressive',
+    name: 'Aggressive Scan (-A)',
+    syntax: 'nmap -A <target>',
+    description: 'Enables OS detection, version detection, script scanning, and traceroute all at once. Comprehensive but slow.',
+    whenToUse: 'When you want maximum information about a target in a single command.',
+    example: 'nmap -A 192.168.1.1',
+    expectedOutput: 'Nmap scan report for 192.168.1.1\nPORT     STATE SERVICE VERSION\n22/tcp   open  ssh     OpenSSH 8.9p1\n80/tcp   open  http    nginx 1.18.0\nRunning: Linux 5.X\nOS details: Linux 5.4 - 5.15\nNetwork Distance: 1 hop',
+    options: ['-A: Aggressive (equivalent to -sV -O -sC --traceroute)', 'Slow but thorough', 'Can trigger IDS alerts'],
+    difficulty: 'intermediate',
+    category: 'Combined',
+  },
+  {
+    id: 'timing-template',
+    name: 'Timing Template (-T1 to -T5)',
+    syntax: 'nmap -T<0-5> <target>',
+    description: 'Controls how aggressive nmap is with timing. T1 is slow and stealthy, T4 is fast, T5 is very fast but less reliable.',
+    whenToUse: 'T1: evade IDS. T3: default balanced. T4: fast scans on reliable networks. T5: speed over accuracy.',
+    example: 'nmap -T4 192.168.1.1',
+    expectedOutput: 'Nmap scan report for 192.168.1.1\nPORT     STATE SERVICE\n22/tcp   open  ssh\n80/tcp   open  http\nNmap done: 1 IP address (1 host up) scanned in 0.35s',
+    options: ['-T0: Paranoid (very slow)', '-T1: Sneaky', '-T2: Polite', '-T3: Normal (default)', '-T4: Aggressive (recommended)', '-T5: Insane (may miss ports)'],
+    difficulty: 'intermediate',
+    category: 'Timing',
+  },
+
+  // ── Advanced ──
+  {
+    id: 'nse-scripts',
+    name: 'NSE Script Scanning (-sC / --script)',
+    syntax: 'nmap -sC <target>  OR  nmap --script <category|name> <target>',
+    description: 'Runs Nmap Scripting Engine (NSE) scripts for vulnerability detection, service enumeration, and more. -sC runs the default script set.',
+    whenToUse: 'When you need deeper enumeration — finding vulnerabilities, grabbing banners, extracting SSL certs, etc.',
+    example: 'nmap -sC 192.168.1.1',
+    expectedOutput: 'Nmap scan report for 192.168.1.1\nPORT     STATE SERVICE\n22/tcp   open  ssh\n| ssh-hostkey:\n|   2048 aa:bb:cc:dd (RSA)\n|_  256 ee:ff:00:11 (ED25519)\n80/tcp   open  http\n|_http-title: Welcome to nginx',
+    options: ['-sC: Default scripts', '--script vuln: Vulnerability scripts', '--script banner: Banner grabbing', '--script="http-*": Wildcard', '--script-args key=value'],
+    difficulty: 'advanced',
+    category: 'Scripting',
+  },
+  {
+    id: 'vuln-scan',
+    name: 'Vulnerability Scan (--script vuln)',
+    syntax: 'nmap --script vuln <target>',
+    description: 'Runs all NSE scripts in the vuln category to check for known vulnerabilities on open services.',
+    whenToUse: 'When you want to check for known vulnerabilities like heartbleed, shellshock, or SMB vulnerabilities.',
+    example: 'nmap --script vuln 192.168.1.1',
+    expectedOutput: 'Nmap scan report for 192.168.1.1\nPORT     STATE SERVICE\n445/tcp  open  microsoft-ds\n|_smb-vuln-ms17-010: VULNERABLE\n|   CVE-2017-0144 (EternalBlue)',
+    options: ['--script vuln: All vulnerability scripts', '--script smb-vuln-*: SMB vulns', '--script ssl-*: SSL vulns', 'Can be very slow'],
+    difficulty: 'advanced',
+    category: 'Vulnerability',
+  },
+  {
+    id: 'firewall-evasion',
+    name: 'Firewall Evasion Techniques',
+    syntax: 'nmap -f --data-length <N> --source-port <port> <target>',
+    description: 'Uses fragmented packets, random data, and source port manipulation to evade firewalls and IDS.',
+    whenToUse: 'When you suspect a firewall is filtering scan traffic and need to attempt evasion (authorized testing only).',
+    example: 'nmap -f --data-length 24 --source-port 53 -T2 192.168.1.1',
+    expectedOutput: 'Nmap scan report for 192.168.1.1\nPORT     STATE         SERVICE\n22/tcp   open          ssh\n80/tcp   open|filtered http',
+    options: ['-f: Fragment packets', '--data-length N: Append random data', '--source-port 53: Spoof DNS source port', '-T2: Slow to avoid detection', 'May not bypass modern firewalls'],
+    difficulty: 'advanced',
+    category: 'Evasion',
+  },
+  {
+    id: 'idle-scan',
+    name: 'Idle Scan (-sI)',
+    syntax: 'nmap -sI <zombie_host> <target>',
+    description: 'A blind scan that uses a zombie host to scan the target. The actual scanner IP is never sent to the target.',
+    whenToUse: 'When you need to scan a target without revealing your IP, using a third-party zombie host with predictable IPID increments.',
+    example: 'nmap -sI 10.0.0.5 target.com',
+    expectedOutput: 'Nmap scan report for target.com (1.2.3.4)\nUsing zombie 10.0.0.5 (10.0.0.5)\nPORT     STATE SERVICE\n22/tcp   open  ssh\n80/tcp   open  http',
+    options: ['-sI zombie: Idle scan via zombie host', 'Very stealthy', 'Requires a suitable zombie host', 'Slower than normal scans'],
+    difficulty: 'advanced',
+    category: 'Evasion',
+  },
+  {
+    id: 'decoys',
+    name: 'Decoy Scan (-D)',
+    syntax: 'nmap -D <decoy1,decoy2,...,ME> <target>',
+    description: 'Sends scan packets from multiple decoy IP addresses along with your real IP, making it hard to identify the real source.',
+    whenToUse: 'When you want to hide your IP among multiple decoy source addresses in log files.',
+    example: 'nmap -D 10.0.0.1,10.0.0.2,ME,RND:5 192.168.1.1',
+    expectedOutput: 'Nmap scan report for 192.168.1.1\nPORT     STATE SERVICE\n22/tcp   open  ssh\n80/tcp   open  http\n\nScan appears from multiple sources in logs.',
+    options: ['-D decoy1,decoy2: Specify decoys', '-D ME: Your real IP position', '-D RND:N: N random decoys', 'Decoys appear in target logs'],
+    difficulty: 'advanced',
+    category: 'Evasion',
+  },
+  {
+    id: 'full-range',
+    name: 'Full Port Range Scan (-p-)',
+    syntax: 'nmap -p- <target>',
+    description: 'Scans all 65535 TCP ports. Very thorough but can take a long time depending on the target and timing.',
+    whenToUse: 'When you need a complete inventory of every open TCP port — nothing missed.',
+    example: 'nmap -p- -T4 192.168.1.1',
+    expectedOutput: 'Nmap scan report for 192.168.1.1\nPORT      STATE SERVICE\n22/tcp    open  ssh\n80/tcp    open  http\n3000/tcp  open  ppp\n8080/tcp  open  http-proxy\nNmap done: 1 IP address (1 host up) scanned in 45.2s',
+    options: ['-p-: All 65535 ports', 'Use with -T4 for speed', 'Can take 10+ minutes', 'Most thorough scan'],
+    difficulty: 'advanced',
+    category: 'Port Selection',
+  },
+];
+
+// ── Nmap Quiz Questions ──
+
+export type NmapQuizQuestion = {
+  id: string;
+  question: string;
+  options: string[];
+  correctIndex: number;
+  explanation: string;
+  difficulty: NmapDifficulty;
+};
+
+export const NMAP_QUIZ: NmapQuizQuestion[] = [
+  { id: 'nq1', question: 'What does the -sS flag do in nmap?', options: ['TCP connect scan', 'SYN stealth scan', 'UDP scan', 'Ping scan'], correctIndex: 1, explanation: '-sS performs a SYN stealth (half-open) scan by sending SYN packets without completing the TCP handshake.', difficulty: 'intermediate' },
+  { id: 'nq2', question: 'Which flag makes nmap scan only the top 100 ports?', options: ['-F', '--top-ports 100', '-p 100', '-T4'], correctIndex: 0, explanation: '-F enables fast mode, scanning only the top 100 most common ports instead of the default 1000.', difficulty: 'beginner' },
+  { id: 'nq3', question: 'What does -Pn do?', options: ['Enables ping scanning', 'Skips host discovery', 'Scans UDP ports', 'Enables version detection'], correctIndex: 1, explanation: '-Pn skips the ping/host discovery phase and treats all targets as online, useful for firewalled hosts.', difficulty: 'beginner' },
+  { id: 'nq4', question: 'Which scan requires root/sudo privileges?', options: ['-sT (TCP connect)', '-sS (SYN scan)', '-sV (Version detection)', '-F (Fast scan)'], correctIndex: 1, explanation: '-sS (SYN scan) requires root because it needs raw socket access to send SYN packets without completing the handshake.', difficulty: 'intermediate' },
+  { id: 'nq5', question: 'What does -A enable?', options: ['Only OS detection', 'Only version detection', 'OS detection + version + scripts + traceroute', 'Only fast scanning'], correctIndex: 2, explanation: '-A is aggressive mode, equivalent to -sV -O -sC --traceroute combined.', difficulty: 'intermediate' },
+  { id: 'nq6', question: 'Which timing template is recommended for most scans?', options: ['-T1', '-T2', '-T3', '-T4'], correctIndex: 3, explanation: '-T4 (Aggressive) is recommended for most networks — fast and reliable. -T3 is the default.', difficulty: 'intermediate' },
+  { id: 'nq7', question: 'What does --script vuln do?', options: ['Scans for viruses', 'Runs vulnerability detection NSE scripts', 'Scans UDP ports for vulnerabilities', 'Performs a fast vulnerability scan'], correctIndex: 1, explanation: '--script vuln runs all NSE scripts in the vuln category to check for known vulnerabilities like EternalBlue or Heartbleed.', difficulty: 'advanced' },
+  { id: 'nq8', question: 'How do you scan all 65535 ports?', options: ['-p all', '-F', '-p-', '--top-ports 65535'], correctIndex: 2, explanation: '-p- tells nmap to scan all 65535 TCP ports. This is the most thorough but slowest port selection option.', difficulty: 'beginner' },
+  { id: 'nq9', question: 'What does -sU scan for?', options: ['UDP ports', 'URL paths', 'Underlying services', 'Unencrypted traffic'], correctIndex: 0, explanation: '-sU performs a UDP port scan, useful for finding UDP services like DNS (53), SNMP (161), and DHCP (67/68).', difficulty: 'intermediate' },
+  { id: 'nq10', question: 'What is the -D flag used for?', options: ['Delay between probes', 'Decoy IP addresses', 'Debug output', 'DNS resolution'], correctIndex: 1, explanation: '-D specifies decoy IP addresses, making the scan appear to come from multiple sources to hide the real scanner.', difficulty: 'advanced' },
+  { id: 'nq11', question: 'Which flag detects the operating system of the target?', options: ['-sV', '-O', '--osscan', '-A'], correctIndex: 1, explanation: '-O enables OS detection by analyzing TCP/IP stack fingerprinting responses. -A also includes -O.', difficulty: 'intermediate' },
+  { id: 'nq12', question: 'What does -sC do?', options: ['Custom scan', 'Runs default NSE scripts', 'TCP connect scan', 'Continuous scan'], correctIndex: 1, explanation: '-sC runs the default set of Nmap Scripting Engine (NSE) scripts for service enumeration and information gathering.', difficulty: 'advanced' },
+  { id: 'nq13', question: 'Which flag is best for evading IDS detection?', options: ['-T5', '-T1', '-F', '-Pn'], correctIndex: 1, explanation: '-T1 (Sneaky) sends packets very slowly with long delays, making it harder for IDS to detect the scan pattern.', difficulty: 'advanced' },
+  { id: 'nq14', question: 'What does --version-intensity control?', options: ['Scan speed', 'How aggressively nmap probes for service versions (0-9)', 'Number of ports scanned', 'OS detection accuracy'], correctIndex: 1, explanation: '--version-intensity (0-9, default 7) controls how many probes nmap sends to each port to determine the service version. Higher = more accurate but slower.', difficulty: 'advanced' },
+  { id: 'nq15', question: 'Which command discovers live hosts without scanning ports?', options: ['nmap -F <target>', 'nmap -sn <target>', 'nmap -Pn <target>', 'nmap -sS <target>'], correctIndex: 1, explanation: '-sn performs a ping scan only — it discovers which hosts are up without scanning any ports.', difficulty: 'beginner' },
+];
